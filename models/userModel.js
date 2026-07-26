@@ -16,7 +16,38 @@ const userSchema=new Schema({
     type:String,
     minLength:[4,"Minimum length of password must be 4 "],
     required:true
-  }
+  },
+  role:{
+    type:String,
+    enum: [
+    "User",
+    "Hospital",
+    "BloodBank",
+    "DeliveryPartner",
+    "Admin"
+  ],
+    default:"User"
+  },
+  isDonor:{
+    type:Boolean,
+    default:false
+  },
+  bloodGroup: {
+    type: String,
+    enum: [
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-",
+        "O+",
+        "O-",
+        "Unknown"
+    ],
+    default: "Unknown"
+},
+
 },{
     strict:"throw",
     versionKey:false,

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
-import authRoutes from "./routes/authRoutes.js"
+import authRoutes from "./routes/authRoutes.js";
+import enquiryRoutes from "./routes/enquiryRoutes.js";
 import { connectDB } from "./config/mongoose.js";
 import cookieParser from "cookie-parser";
 
@@ -20,7 +21,8 @@ app.use(cors({
 
 app.use(cookieParser(mySecretKey));
 
-app.use("/auth", authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/enquiries", enquiryRoutes);
 
 app.listen(PORT,()=>{
     console.log("server is running on http://localhost:4000");

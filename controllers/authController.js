@@ -8,7 +8,6 @@ import crypto from "crypto";
 export const registerUser = async (req, res) => {
   console.log("Register controller function is running");
   try{
-  
   const { success, data, error} = registerSchema.safeParse(req.body);
 
   if (!success){
@@ -74,8 +73,7 @@ export const loginUser = async (req, res) => {
     res.cookie("sid", sessionId, {
       httpOnly: true,
       signed: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: "lax",
       maxAge: sessionExpiryTime * 1000,
     });
 
@@ -84,3 +82,25 @@ export const loginUser = async (req, res) => {
     console.log(err.message);
     return res.status(500).json({"message":"Internal Server Error"});
 }};
+
+
+export const fetchCurrentUser=async (req,res)=>{
+  console.log("fetch controller user function is running");
+  try{
+  const userId=req.user._id;
+  console.log("userId",userId);
+  const currentUser=await User.findById(userId).select("-password").lean();
+  return res.status(200).json({currentUser});
+  }catch(err){
+    console.log(err.message);
+    return res.status(500).json({"message":"Internal Server Error"});
+  }
+}
+
+export const logoutUser=async (req,res)=>{
+   console.log("logout function is running");
+   const sessionId = req.signedCookies.sid;
+   await redisClient.del(`session:${sessionId}`);
+   res.clearCookie("sid");
+   return res.status(204).end();
+}

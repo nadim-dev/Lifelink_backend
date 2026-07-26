@@ -1,0 +1,12 @@
+
+> dev
+> node    --no-deprecation  --env-file=.env  app.js
+
+Redis client error Error: connect EACCES 3.110.122.138:15848
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4092,
+  code: 'EACCES',
+  syscall: 'connect',
+  address: '3.110.122.138',
+  port: 15848
+}
