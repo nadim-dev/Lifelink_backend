@@ -9,3 +9,10 @@ export const registerSchema= z.object({
    ...loginSchema.shape,
     username:z.string().trim().min(1,"Name Must contain atleast three character").max(100,"name must be less than hundred character"),
 })
+
+export const googleLoginSchema=z.object({
+  id_token: z
+    .string()
+    .min(10, "Invalid Google token")
+});
+
