@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dompurify": "^3.4.12",
@@ -12,6 +13,7 @@
     "google-auth-library": "^10.9.1",
     "jsdom": "^29.1.1",
     "mongoose": "^9.7.4",
+    "multer": "^2.2.0",
     "redis": "^6.1.0",
     "zod": "^4.4.3"
   }

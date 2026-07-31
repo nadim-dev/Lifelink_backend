@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import enquiryRoutes from "./routes/enquiryRoutes.js";
 import donorRoutes from "./routes/donorRoutes.js";
+import supportTicketRoutes from "./routes/supportTicketRoutes.js";
 import { connectDB } from "./config/mongoose.js";
 import cookieParser from "cookie-parser";
 
@@ -25,6 +26,7 @@ app.use(cookieParser(mySecretKey));
 app.use("/api/auth", authRoutes);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/donors", donorRoutes);
+app.use("/api/support-tickets", supportTicketRoutes);
 
 app.listen(PORT,()=>{
     console.log("server is running on http://localhost:4000");
