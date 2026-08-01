@@ -24,7 +24,7 @@ const userSchema=new Schema({
     "BloodBank",
     "DeliveryPartner",
     "Admin"
-  ],
+  ],  
     default:"User"
   },
   isDonor:{

@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import {createSupportTicket,getMySupportTickets,} from "../controllers/supportTicketController.js";
+import {addTicketMessage,createSupportTicket,getMySupportTickets,getTicketById} from "../controllers/supportTicketController.js";
 import checkAuth from "../middleware/authMiddleware.js";
 import { uploadSupportTicketScreenshot } from "../middleware/supportTicketUpload.js";
 
@@ -10,6 +10,14 @@ router.post("/",checkAuth,uploadSupportTicketScreenshot.single("screenshot"),cre
 
 router.get("/mine", checkAuth, getMySupportTickets);
 
+router.get("/:ticketId",checkAuth,getTicketById);
+
+router.post(
+  "/:ticketId/messages",
+  checkAuth,
+  uploadSupportTicketScreenshot.single("attachment"),
+  addTicketMessage
+);
 
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
