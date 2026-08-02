@@ -13,26 +13,12 @@ const donorSchema = Schema(
       required: true,
       trim: true,
     },
-    dateOfBirth: {
-      type: Date,
-      required: true,
-    },
-    gender: {
-      type: String,
-      required: true,
-      enum: ["Male", "Female", "Other"],
-    },
     weight: {
       type: Number,
       required: true,
       min: 1,
     },
-    phoneNumber: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    donatedBefore: {
+    hasDonatedBefore: {
       type: String,
       required: true,
       enum: ["never", "yes"],
@@ -60,18 +46,20 @@ const donorSchema = Schema(
       required: true,
       enum: ["anytime", "emergency", "unavailable"],
     },
-    maxTravelDistance: {
+    preferredDistance: {
       type: Number,
       required: true,
       enum: [5, 10, 20, 50],
     },
-    notifyNearbyRequests: {
-      type: Boolean,
-      required: true,
-    },
-    notifyEmergencyRequests: {
-      type: Boolean,
-      required: true,
+    notificationPreferences: {
+      nearbyRequests: {
+        type: Boolean,
+        required: true,
+      },
+      emergencyRequests: {
+        type: Boolean,
+        required: true,
+      },
     },
   },
   {

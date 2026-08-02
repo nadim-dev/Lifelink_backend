@@ -32,6 +32,25 @@ const userSchema=new Schema({
     default:false
   },
 
+  phoneNumber: {
+    type: String,
+    trim: true,
+  },
+
+  gender: {
+    type: String,
+    enum: ["Male", "Female", "Other"],
+  },
+
+  dateOfBirth: {
+    type: Date,
+  },
+
+  location: {
+    type: String,
+    trim: true,
+  },
+
   city: {
     type: String,
     trim: true,
@@ -64,28 +83,19 @@ const userSchema=new Schema({
       max: 180,
     },
   },
-  bloodGroup: {
-    type: String,
-    enum: [
-        "A+",
-        "A-",
-        "B+",
-        "B-",
-        "AB+",
-        "AB-",
-        "O+",
-        "O-",
-        "Unknown"
-    ],
-    default: "Unknown"
-},
 picture:{
   type:String
+},
+authProvider:{
+  type:String,
+  enum:["local","google"],
+  default:"local"
 }
 
 },{
     strict:"throw",
     versionKey:false,
+    timestamps: true
 });
 
 userSchema.pre("save",async function (){

@@ -1,7 +1,8 @@
-import Donor from "../models/donorModel.js";
 import { sanitize } from "../utils/sanitize.js";
-import { donorSchema } from "../validators/donorValidator.js";
+import { donorSchema, updateDonorSchema } from "../validators/donorValidator.js";
 import User from "../models/userModel.js";
+import { createDonorProfile } from "../services/donorService.js";
+import Donor from "../models/donorModel.js";
 
 const getAddressFromCoordinates = async ({ latitude, longitude }) => {
   const response = await fetch(
@@ -74,32 +75,10 @@ export const createDonor = async (req, res) => {
       });
     }
 
-    const donorData = {
-      ...data,
-      phoneNumber: sanitizeText(data.phoneNumber),
+    const { donor } = await createDonorProfile({
       userId: req.user._id,
-      lastDonationDate: data.lastDonationDate || null,
-      healthReason: sanitizeText(data.healthReason || ""),
-    };
-
-    const donor = await Donor.findOneAndUpdate(
-      { userId:req.user._id},
-      donorData,
-      {
-        new: true,
-        runValidators: true,
-        upsert: true,
-      },
-    );
-
-    await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        isDonor: true,
-        bloodGroup: data.bloodGroup,
-      },
-      { runValidators: true },
-    );
+      donorInput: data,
+    });
 
     return res.status(201).json({
       message: "Donor profile created successfully",
@@ -107,6 +86,11 @@ export const createDonor = async (req, res) => {
     });
   } catch (err) {
     console.log(err.message);
+
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+
     if (
       err.message === "Google Maps API key is missing" ||
       err.message === "Unable to convert coordinates into address" ||
@@ -115,6 +99,58 @@ export const createDonor = async (req, res) => {
       return res.status(502).json({ message: "Unable to detect address from coordinates" });
     }
 
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getCurrentUserDonor = async (req, res) => {
+  try {
+    const donor = await Donor.findOne({ userId: req.user._id }).lean();
+
+    if (!donor) {
+      return res.status(404).json({ message: "Donor profile not found" });
+    }
+
+    return res.status(200).json({ donor });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const updateCurrentUserDonor = async (req, res) => {
+  try {
+    const { success, data, error } = updateDonorSchema.safeParse(req.body);
+
+    if (!success) {
+      return res.status(400).json({
+        message: "Invalid donor input",
+        errors: error.flatten().fieldErrors,
+      });
+    }
+
+    const donor = await Donor.findOneAndUpdate(
+      { userId: req.user._id },
+      {
+        weight: data.weight,
+        isHealthy: data.isHealthy,
+        healthReason: data.isHealthy === "no" ? sanitizeText(data.healthReason) : "",
+        availability: data.availability,
+        preferredDistance: data.preferredDistance,
+      },
+      { new: true, runValidators: true },
+    ).lean();
+
+    if (!donor) {
+      return res.status(404).json({ message: "Donor profile not found" });
+    }
+
+    return res.status(200).json({
+      message: "Donor information updated successfully",
+      donor,
+    });
+  } catch (err) {
+    console.log(err.message);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
