@@ -9,6 +9,8 @@ import { sanitize } from "../utils/sanitize.js";
 import { googleLoginSchema, loginSchema, registerSchema, updatePasswordSchema, updateProfileSchema } from "../validators/authValidator.js";
 import { verifyIdToken } from "../services/googleAuthService.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
+import { sendEmail } from "../services/resetLinkService.js";
+import { generateResetPasswordTemplate } from "../template/resetPassword.template.js";
 
 const toCurrentUser = (user) => {
   const plainUser = typeof user.toObject === "function" ? user.toObject() : user;
@@ -66,7 +68,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email }).lean();
 
     if (!user) {
-      return res.status(404).json({ message: "user not found" });
+      return res.status(404).json({ message: "user dosen't exist" });
     }
 
     if (!user.password) {
@@ -322,5 +324,103 @@ export const loginWithGoogle = async (req, res) => {
   } catch (err) {
     console.log(err.message);
     return res.status(500).json({ message: "Google login failed" });
+  }
+};
+
+export const resetUserPassword=async (req,res)=>{
+  console.log("reset user passwrod controller is running");
+  const {email}=req.body;
+  console.log("email",email);
+  const user=await User.findOne({email});
+  console.log("user",user);
+  if (!user){
+    return res.status(200).json({ message: "If an account with this email exists, a password reset link will be sent."})
+  }
+
+  //* we are generating reset token
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+  user.passwordResetToken = hashedToken;
+  user.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  await user.save();
+
+  const resetLink =`http://localhost:5173/reset-password/${resetToken}`;
+
+  const emailBody=generateResetPasswordTemplate(resetLink);
+
+  await sendEmail({
+    to: user.email,
+    subject: "Reset Your MediVerse Password",
+    html: emailBody,
+});
+
+  return res.status(200).json({
+    message: "If an account with this email exists, a password reset link will be sent.",
+  });
+}
+
+
+export const createNewUserPassword = async (req, res) => {
+  try {
+    console.log("Create new user password controller is running");
+
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    //* Validate input
+    if (!password || !confirmPassword) {
+      return res.status(400).json({
+        message: "Password and Confirm Password are required.",
+      });
+    }
+
+    //* Check password match
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match.",
+      });
+    }
+
+    //* Hash the token received from URL
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    //* Find user with valid token
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: {
+        $gt: new Date(),
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Reset link is invalid or has expired.",
+      });
+    }
+
+    //* Update password
+    user.password = password;
+
+    //* Remove reset token
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    //* Save user (password will be hashed by pre-save middleware)
+    await user.save();
+
+    return res.status(200).json({
+      message: "Password has been reset successfully.",
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong. Please try again later.",
+    });
   }
 };

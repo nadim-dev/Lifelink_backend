@@ -90,7 +90,15 @@ authProvider:{
   type:String,
   enum:["local","google"],
   default:"local"
-}
+},
+passwordResetToken: {
+  type: String,
+},
+
+passwordResetExpires: {
+  type: Date,
+},
+
 
 },{
     strict:"throw",
