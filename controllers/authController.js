@@ -11,6 +11,8 @@ import { verifyIdToken } from "../services/googleAuthService.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
 import { sendEmail } from "../services/resetLinkService.js";
 import { generateResetPasswordTemplate } from "../template/resetPassword.template.js";
+import Notification from "../models/notificationModel.js";
+
 
 const toCurrentUser = (user) => {
   const plainUser = typeof user.toObject === "function" ? user.toObject() : user;
@@ -272,60 +274,70 @@ export const deleteCurrentUserAccount = async (req, res) => {
 };
 
 export const loginWithGoogle = async (req, res) => {
-  console.log("google login controller function is running");
+    console.log("google login controller function is running");
 
-  const { success, data } = googleLoginSchema.safeParse(req.body);
+    const { success, data } = googleLoginSchema.safeParse(req.body);
 
-  if (!success) {
-    return res.status(400).json({ message: "Invalid Otp" });
-  }
-
-  const { id_token } = data;
-
-  try {
-    const profileData = await verifyIdToken(id_token);
-    console.log(profileData);
-    const {name, email, picture} = profileData;
-
-    let user = await User.findOne({ email }).lean();
-
-    if (!user) {
-      user=await User.create({
-        username:name,
-        email,
-        picture,
-        authProvider:"google"
-      })
+    if (!success) {
+      return res.status(400).json({ message: "Invalid Otp" });
     }
 
-    const sessionId = crypto.randomUUID();
-    const sessionExpiryTime = 7 * 24 * 60 * 60;
-    const rediskey = `session:${sessionId}`;
+    const { id_token } = data;
 
-    await redisClient.hSet(rediskey, {
-      userId: user._id.toString(),
-      createdAt: Date.now(),
-    });
-    await redisClient.expire(rediskey, sessionExpiryTime);
+    try {
+      const profileData = await verifyIdToken(id_token);
+      console.log(profileData);
+      const {name, email, picture} = profileData;
 
-    res.cookie("sid", sessionId, {
-      httpOnly: true,
-      signed: true,
-      sameSite: "lax",
-      maxAge: sessionExpiryTime * 1000,
-    });
+      let user = await User.findOne({ email }).lean();
 
-    const currentUser = toCurrentUser(user);
+      if (!user) {
+        user=await User.create({
+          username:name,
+          email,
+          picture,
+          authProvider:"google"
+        })
 
-    return res.status(200).json({
-      message: "Google login successful",
-      currentUser,
-    });
-  } catch (err) {
-    console.log(err.message);
-    return res.status(500).json({ message: "Google login failed" });
-  }
-};
+        await Notification.create({
+            userId: user._id,
+            title: "Welcome! 👋",
+            message:
+              "Thanks for joining MediVerse. Explore blood donation, medicine comparison, hospitals, and emergency services.",
+            type: "System",
+            actionUrl: "/dashboard",
+        });
+
+      }
+
+      const sessionId = crypto.randomUUID();
+      const sessionExpiryTime = 7 * 24 * 60 * 60;
+      const rediskey = `session:${sessionId}`;
+
+      await redisClient.hSet(rediskey, {
+        userId: user._id.toString(),
+        createdAt: Date.now(),
+      });
+      await redisClient.expire(rediskey, sessionExpiryTime);
+
+      res.cookie("sid", sessionId, {
+        httpOnly: true,
+        signed: true,
+        sameSite: "lax",
+        maxAge: sessionExpiryTime * 1000,
+      });
+
+      const currentUser = toCurrentUser(user);
+
+      return res.status(200).json({
+        message: "Google login successful",
+        currentUser,
+      });
+    } catch (err) {
+      console.log(err.message);
+      return res.status(500).json({ message: "Google login failed" });
+    }
+  };
 
 export const resetUserPassword=async (req,res)=>{
   console.log("reset user passwrod controller is running");

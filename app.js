@@ -6,6 +6,7 @@ import donorRoutes from "./routes/donorRoutes.js";
 import supportTicketRoutes from "./routes/supportTicketRoutes.js";
 import { connectDB } from "./config/mongoose.js";
 import cookieParser from "cookie-parser";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 try{
 await connectDB();
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/donors", donorRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
+app.use("/api/notifications",notificationRoutes);
 
 app.listen(PORT,()=>{
     console.log("server is running on http://localhost:4000");
