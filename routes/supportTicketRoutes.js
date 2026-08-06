@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
-import {addTicketMessage,createSupportTicket,getMySupportTickets,getTicketById} from "../controllers/supportTicketController.js";
-import checkAuth from "../middleware/authMiddleware.js";
+import {addAdminTicketMessage,addTicketMessage,createSupportTicket,getAllSupportTicketsForAdmin,getMySupportTickets,getSupportTicketForAdmin,getTicketById,updateTicketStatusForAdmin} from "../controllers/supportTicketController.js";
+import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadSupportTicketScreenshot } from "../middleware/supportTicketUpload.js";
 
 const router = express.Router();
@@ -9,6 +9,20 @@ const router = express.Router();
 router.post("/",checkAuth,uploadSupportTicketScreenshot.single("screenshot"),createSupportTicket);
 
 router.get("/mine", checkAuth, getMySupportTickets);
+
+router.get("/admin/all", checkAuth, allowRoles("Admin"), getAllSupportTicketsForAdmin);
+
+router.get("/admin/:ticketId", checkAuth, allowRoles("Admin"), getSupportTicketForAdmin);
+
+router.patch("/admin/:ticketId/status", checkAuth, allowRoles("Admin"), updateTicketStatusForAdmin);
+
+router.post(
+  "/admin/:ticketId/messages",
+  checkAuth,
+  allowRoles("Admin"),
+  uploadSupportTicketScreenshot.single("attachment"),
+  addAdminTicketMessage
+);
 
 router.get("/:ticketId",checkAuth,getTicketById);
 

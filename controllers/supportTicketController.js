@@ -93,6 +93,38 @@ export const getMySupportTickets = async (req, res) => {
   }
 };
 
+export const getAllSupportTicketsForAdmin = async (req, res) => {
+  try {
+    const tickets = await SupportTicket.find({})
+      .populate("userId", "username email phoneNumber picture role createdAt")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    return res.status(200).json({ tickets });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getSupportTicketForAdmin = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const ticketDetail = await SupportTicket.findOne({ ticketId })
+      .populate("userId", "username email phoneNumber picture role createdAt")
+      .lean();
+
+    if (!ticketDetail) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    return res.status(200).json({ ticketDetail });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export const getTicketById = async (req, res) => {
   console.log("Get Ticket by id controller is running");
   try{
@@ -160,6 +192,114 @@ export const addTicketMessage = async (req, res) => {
     return res.status(201).json({
       message: "Reply sent successfully",
       ticketMessage: ticket.messages.at(-1),
+    });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const addAdminTicketMessage = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const cleanData = sanitize({
+      message: req.body?.message || "",
+    });
+    const messageText = cleanData.message.trim();
+
+    if (!messageText && !req.file) {
+      return res.status(400).json({ message: "Message or image is required" });
+    }
+
+    const ticket = await SupportTicket.findOne({ ticketId });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    let attachmentUrl = null;
+    let attachmentName = null;
+
+    if (req.file) {
+      const uploadResult = await uploadBufferToCloudinary(req.file.buffer, {
+        public_id: `${req.user._id}-${ticketId}-${Date.now()}`,
+      });
+
+      attachmentUrl = uploadResult.secure_url;
+      attachmentName = sanitize({ name: req.file.originalname }).name;
+    }
+
+    const reply = {
+      sender: "Admin",
+      senderId: req.user._id,
+      message: messageText,
+      attachment: attachmentUrl,
+      attachmentName,
+    };
+
+    ticket.messages.push(reply);
+    ticket.lastMessageBy = "Admin";
+    ticket.lastRepliedAt = new Date();
+
+    await ticket.save();
+
+    const updatedTicket = await SupportTicket.findOne({ ticketId })
+      .populate("userId", "username email phoneNumber picture role createdAt")
+      .lean();
+
+    return res.status(201).json({
+      message: "Reply sent successfully",
+      ticketMessage: ticket.messages.at(-1),
+      ticket: updatedTicket,
+    });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const updateTicketStatusForAdmin = async (req, res) => {
+  try {
+    const { ticketId } = req.params;
+    const { status } = sanitize({ status: req.body?.status || "" });
+    const allowedStatuses = ["Open", "In Progress", "Resolved", "Closed"];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid ticket status" });
+    }
+
+    const ticket = await SupportTicket.findOne({ ticketId });
+
+    if (!ticket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    if (ticket.status !== status) {
+      const currentStatusIndex = allowedStatuses.indexOf(ticket.status);
+      const nextStatusIndex = allowedStatuses.indexOf(status);
+
+      if (nextStatusIndex < currentStatusIndex) {
+        return res.status(400).json({
+          message: "Ticket status can only move forward",
+        });
+      }
+
+      ticket.status = status;
+      ticket.statusHistory.push({
+        status,
+        changedAt: new Date(),
+      });
+    }
+
+    await ticket.save();
+
+    const updatedTicket = await SupportTicket.findOne({ ticketId })
+      .populate("userId", "username email phoneNumber picture role createdAt")
+      .lean();
+
+    return res.status(200).json({
+      message: "Ticket status updated successfully",
+      ticket: updatedTicket,
     });
   } catch (err) {
     console.log(err.message);
