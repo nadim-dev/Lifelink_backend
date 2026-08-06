@@ -23,6 +23,14 @@ const enquirySchema = Schema(
       required: true,
       trim: true,
     },
+    isReplied: {
+    type: Boolean,
+    default: false,
+    },
+    repliedAt: {
+    type: Date,
+    default: null,
+  },
   },
   {
     timestamps: true,

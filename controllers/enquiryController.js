@@ -1,4 +1,5 @@
 import Enquiry from "../models/enquiryModel.js";
+import { sendEmail } from "../services/resetLinkService.js";
 import { sanitize } from "../utils/sanitize.js";
 import { enquirySchema } from "../validators/enquiryValidator.js";
 
@@ -17,6 +18,61 @@ export const createEnquiry = async (req, res) => {
 
     return res.status(201).json({
       message: "Enquiry submitted successfully",
+      enquiry,
+    });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const getAllEnquiries = async (req, res) => {
+  try {
+    const enquiries = await Enquiry.find().sort({ createdAt: -1 }).lean();
+
+    return res.status(200).json({
+      message: "Enquiries fetched successfully",
+      enquiries,
+    });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export const replyToEnquiry = async (req, res) => {
+  try {
+    const { reply } = req.body;
+    const cleanReply = sanitize({ reply })?.reply?.trim();
+
+    if (!cleanReply) {
+      return res.status(400).json({ message: "Reply message is required" });
+    }
+
+    const enquiry = await Enquiry.findById(req.params.id);
+
+    if (!enquiry) {
+      return res.status(404).json({ message: "Enquiry not found" });
+    }
+
+    await sendEmail({
+      to: enquiry.email,
+      subject: `Re: ${enquiry.subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+          <p>Hello ${enquiry.name},</p>
+          <p>${cleanReply.replaceAll("\n", "<br />")}</p>
+          <p style="margin-top: 24px;">Regards,<br />BIT Support Team</p>
+        </div>
+      `,
+    });
+
+    enquiry.isReplied = true;
+    enquiry.repliedAt = new Date();
+    await enquiry.save();
+
+    return res.status(200).json({
+      message: "Reply sent successfully",
       enquiry,
     });
   } catch (err) {
