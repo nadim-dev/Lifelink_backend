@@ -32,7 +32,8 @@ const notificationSchema = new Schema(
         "Donation",
         "Hospital",
         "Medicine",
-        "Enquiry"
+        "Enquiry",
+        "Blood Bank"
       ],
       default: "System",
     },

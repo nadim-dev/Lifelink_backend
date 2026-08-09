@@ -1,7 +1,28 @@
 import BloodBank from "../models/BloodbankModel.js";
+import Notification from "../models/notificationModel.js";
 import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
+
+const getRouteDistanceInMeters = async ({ fromLatitude, fromLongitude, toLatitude, toLongitude }) => {
+  if (!process.env.GEOAPIFY_API_KEY) return null;
+
+  const url = new URL("https://api.geoapify.com/v1/routing");
+  url.searchParams.set("waypoints", `${fromLatitude},${fromLongitude}|${toLatitude},${toLongitude}`);
+  url.searchParams.set("mode", "drive");
+  url.searchParams.set("apiKey", process.env.GEOAPIFY_API_KEY);
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Geoapify route distance request failed");
+  }
+
+  const data = await response.json();
+  const distance = Number(data?.features?.[0]?.properties?.distance);
+
+  return Number.isFinite(distance) ? distance : null;
+};
 
 export const getAllBloodBanksForAdmin = async (req, res) => {
   try {
@@ -9,7 +30,7 @@ export const getAllBloodBanksForAdmin = async (req, res) => {
       .populate("userId", "email username")
       .sort({ createdAt: -1 })
       .lean();
-
+    
     return res.json({ bloodBanks });
   } catch (error) {
     console.error("Admin blood bank list error:", error);
@@ -35,6 +56,26 @@ export const getBloodBankForAdmin = async (req, res) => {
     return res.json({ bloodBank });
   } catch (error) {
     console.error("Admin blood bank detail error:", error);
+    return res.status(500).json({ message: "Unable to load blood bank details" });
+  }
+};
+
+export const getPublicBloodBank = async (req, res) => {
+  try {
+    const bloodBank = await BloodBank.findOne({
+      _id: req.params.bloodBankId,
+      status: "Approved",
+    })
+      .select("bloodBankName phoneNumber address workingHours inventory imageUrl imageURL location status")
+      .lean();
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank not found" });
+    }
+
+    return res.json({ bloodBank });
+  } catch (error) {
+    console.error("Public blood bank detail error:", error);
     return res.status(500).json({ message: "Unable to load blood bank details" });
   }
 };
@@ -113,6 +154,104 @@ export const updateBloodBankStatusForAdmin = async (req, res) => {
   } catch (error) {
     console.error("Admin blood bank status update error:", error);
     return res.status(500).json({ message: "Unable to update blood bank status" });
+  }
+};
+
+export const getNearbyBloodBanks = async (req, res) => {
+  try {
+    let longitude = Number(req.query.longitude);
+    let latitude = Number(req.query.latitude);
+
+    if (
+      !Number.isFinite(longitude) ||
+      !Number.isFinite(latitude)
+    ) {
+      const user = await User.findById(req.user._id).select("location").lean();
+      const coordinates = user?.location?.coordinates;
+
+      if (
+        !Array.isArray(coordinates) ||
+        coordinates.length !== 2 ||
+        coordinates.some((coordinate) => Number.isNaN(Number(coordinate)))
+      ) {
+        return res.status(400).json({ message: "Please update your current location first" });
+      }
+
+      [longitude, latitude] = coordinates.map(Number);
+    }
+
+    const bloodBanks = await BloodBank.aggregate([
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          distanceField: "distanceInMeters",
+          spherical: true,
+          maxDistance: 50000,
+          query: { status: "Approved" },
+        },
+      },
+      {
+        $project: {
+          bloodBankName: 1,
+          phoneNumber: 1,
+          address: 1,
+          location: 1,
+          workingHours: 1,
+          inventory: 1,
+          distanceInMeters: 1,
+        },
+      },
+      { $limit: 30 },
+    ]);
+
+    const bloodBanksWithRouteDistance = await Promise.all(
+      bloodBanks.map(async (bloodBank) => {
+        const [bankLongitude, bankLatitude] = bloodBank.location?.coordinates || [];
+        const toLatitude = Number(bankLatitude);
+        const toLongitude = Number(bankLongitude);
+
+        if (!Number.isFinite(toLatitude) || !Number.isFinite(toLongitude)) {
+          return {
+            ...bloodBank,
+            routeDistanceInMeters: null,
+          };
+        }
+
+        try {
+          const routeDistanceInMeters = await getRouteDistanceInMeters({
+            fromLatitude: latitude,
+            fromLongitude: longitude,
+            toLatitude,
+            toLongitude,
+          });
+
+          return {
+            ...bloodBank,
+            routeDistanceInMeters,
+          };
+        } catch (routeError) {
+          console.error("Blood bank route distance error:", routeError.message);
+          return {
+            ...bloodBank,
+            routeDistanceInMeters: null,
+          };
+        }
+      })
+    );
+
+    return res.status(200).json({
+      userLocation: {
+        type: "Point",
+        coordinates: [longitude, latitude],
+      },
+      bloodBanks: bloodBanksWithRouteDistance,
+    });
+  } catch (error) {
+    console.error("Nearby blood banks error:", error);
+    return res.status(500).json({ message: "Unable to load nearby blood banks" });
   }
 };
 
@@ -207,6 +346,23 @@ export const registerBloodBank = async (req, res) => {
         url: uploadResult.secure_url,
       },
     });
+
+    const admins = await User.find({ role: "Admin" }).select("_id").lean();
+
+    if (admins.length) {
+      await Notification.insertMany(
+        admins.map((admin) => ({
+          userId: admin._id,
+          title: "New Blood Bank Registration",
+          message: `${bloodBankName} submitted a new blood bank registration for verification.`,
+          type: "Blood Bank",
+          actionUrl: `/admin/blood-bank/${bloodBank._id}`,
+        })),
+        { ordered: false }
+      ).catch((notificationError) => {
+        console.error("Blood bank admin notification error:", notificationError);
+      });
+    }
 
     return res.status(201).json({
      message:

@@ -136,32 +136,6 @@ const bloodBankSchema = new Schema(
       },
     },
 
-    activityHistory: [
-      {
-        action: {
-          type: String,
-          required: true,
-          trim: true,
-        },
-        status: {
-          type: String,
-          enum: ["Pending", "Approved", "Rejected", "Suspended"],
-        },
-        note: {
-          type: String,
-          trim: true,
-        },
-        performedBy: {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-        performedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
-
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected", "Suspended"],
