@@ -45,12 +45,6 @@ const userSchema=new Schema({
   dateOfBirth: {
     type: Date,
   },
-
-  location: {
-    type: String,
-    trim: true,
-  },
-
   city: {
     type: String,
     trim: true,
@@ -67,30 +61,32 @@ const userSchema=new Schema({
     type: String,
     trim: true,
   },
-  long_address:{
-     type: String,
-     trim: true,
-  },
-  coordinates: {
-    latitude: {
-      type: Number,
-      min: -90,
-      max: 90,
+
+  location: {
+    type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point"
     },
-    longitude: {
-      type: Number,
-      min: -180,
-      max: 180,
-    },
-  },
+    coordinates: {
+        type: [Number], // [longitude, latitude]
+        default:undefined
+    }
+},
+lastLocationUpdatedAt:{
+    type:Date,
+},
+
 picture:{
   type:String
 },
+
 authProvider:{
   type:String,
   enum:["local","google"],
   default:"local"
 },
+
 passwordResetToken: {
   type: String,
 },
@@ -99,12 +95,13 @@ passwordResetExpires: {
   type: Date,
 },
 
-
 },{
     strict:"throw",
     versionKey:false,
     timestamps: true
 });
+
+userSchema.index({ location: "2dsphere" });
 
 userSchema.pre("save",async function (){
   //* if password is not modified, skip hashing

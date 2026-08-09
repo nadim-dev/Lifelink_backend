@@ -32,6 +32,7 @@ const notificationSchema = new Schema(
         "Donation",
         "Hospital",
         "Medicine",
+        "Enquiry"
       ],
       default: "System",
     },
@@ -52,4 +53,5 @@ const notificationSchema = new Schema(
 );
 
 const Notification= model("Notification", notificationSchema);
+
 export default Notification;

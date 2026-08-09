@@ -28,25 +28,38 @@ export const updateUserLocation = async (req, res) => {
     const { coordinates } = req.body;
     console.log("coordinates", coordinates);
 
+    const latitude = Number(coordinates?.latitude);
+    const longitude = Number(coordinates?.longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return res.status(400).json({ message: "Valid coordinates are required" });
+    }
+
     const {address} = await getAddressFromCoordinates(coordinates);
     console.log("address",address);
     const shortAddress = sanitizeText(address.ShortLabel || address.Address || address.Match_addr);
 
-    await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
         city: sanitizeText(address.City || address.District || ""),
+        district: sanitizeText(address.District || address.Subregion || ""),
         state: sanitizeText(address.Region || ""),
         short_address: shortAddress,
-        long_address: sanitizeText(address.LongLabel || address.Match_addr),
-        coordinates: {latitude: address.Y,longitude: address.X}
+        location: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
+        lastLocationUpdatedAt: new Date(),
       },
-      { runValidators: true },
+      { new: true, runValidators: true },
     );
 
     return res.status(200).json({
       message: "Location updated successfully",
-      short_address: shortAddress,
+      short_address: updatedUser.short_address,
+      location: updatedUser.location,
+      lastLocationUpdatedAt: updatedUser.lastLocationUpdatedAt,
     });
   } catch (err) {
     console.log(err.message);

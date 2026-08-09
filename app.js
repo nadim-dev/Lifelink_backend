@@ -7,6 +7,8 @@ import supportTicketRoutes from "./routes/supportTicketRoutes.js";
 import { connectDB } from "./config/mongoose.js";
 import cookieParser from "cookie-parser";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import geocodingRoutes from "./routes/geocodingRoutes.js"
+import bloodBankRoutes from "./routes/bloodBankRoutes.js";
 
 try{
 await connectDB();
@@ -29,6 +31,9 @@ app.use("/api/enquiries", enquiryRoutes);
 app.use("/api/donors", donorRoutes);
 app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/notifications",notificationRoutes);
+app.use("/api/geocoding", geocodingRoutes);
+app.use("/api/blood-banks", bloodBankRoutes);
+
 
 app.listen(PORT,()=>{
     console.log("server is running on http://localhost:4000");

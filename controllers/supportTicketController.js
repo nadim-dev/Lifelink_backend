@@ -3,7 +3,8 @@ import SupportTicket from "../models/ticketModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
 import { supportTicketSchema } from "../validators/supportTicketValidator.js";
-
+import User from "../models/userModel.js";
+import Notification from "../models/notificationModel.js";
 
 const createTicketId = async () => {
   const counter = await Counter.findOneAndUpdate(
@@ -69,6 +70,19 @@ export const createSupportTicket = async (req, res) => {
   lastMessageBy: "Admin",
   lastRepliedAt: new Date(),
     });
+
+    const admin=await User.findOne({role:"Admin"}).select("_id").lean();
+
+    if (admin){
+            await Notification.create({
+              userId: admin._id,
+              title: "New Support Ticket",
+              message: `${req.user.username} created a new support ticket.`,
+              type: "Support Ticket",
+              actionUrl: `/admin/tickets/${ticket.ticketId}`,
+      });
+     }
+
 
     return res.status(201).json({
       message: "Support ticket created successfully",

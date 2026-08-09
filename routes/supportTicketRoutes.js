@@ -16,22 +16,11 @@ router.get("/admin/:ticketId", checkAuth, allowRoles("Admin"), getSupportTicketF
 
 router.patch("/admin/:ticketId/status", checkAuth, allowRoles("Admin"), updateTicketStatusForAdmin);
 
-router.post(
-  "/admin/:ticketId/messages",
-  checkAuth,
-  allowRoles("Admin"),
-  uploadSupportTicketScreenshot.single("attachment"),
-  addAdminTicketMessage
-);
+router.post("/admin/:ticketId/messages",checkAuth,allowRoles("Admin"),uploadSupportTicketScreenshot.single("attachment"),addAdminTicketMessage);
 
 router.get("/:ticketId",checkAuth,getTicketById);
 
-router.post(
-  "/:ticketId/messages",
-  checkAuth,
-  uploadSupportTicketScreenshot.single("attachment"),
-  addTicketMessage
-);
+router.post("/:ticketId/messages",checkAuth,uploadSupportTicketScreenshot.single("attachment"),addTicketMessage);
 
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
