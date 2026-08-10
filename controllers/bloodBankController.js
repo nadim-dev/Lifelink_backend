@@ -1,5 +1,5 @@
-import BloodBank from "../models/BloodbankModel.js";
 import Notification from "../models/notificationModel.js";
+import BloodBank from "../models/BloodbankModel.js";
 import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
@@ -80,6 +80,80 @@ export const getPublicBloodBank = async (req, res) => {
   }
 };
 
+export const getMyBloodBankProfile = async (req, res) => {
+  try {
+    const bloodBank = await BloodBank.findOne({ userId: req.user._id })
+      .populate("userId", "email username phoneNumber role picture createdAt")
+      .lean();
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank profile not found" });
+    }
+
+    return res.json({ bloodBank });
+  } catch (error) {
+    console.error("Blood bank profile load error:", error);
+    return res.status(500).json({ message: "Unable to load blood bank profile" });
+  }
+};
+
+export const updateMyBloodBankProfile = async (req, res) => {
+  try {
+    const {
+      contactPersonName,
+      phoneNumber,
+      openingTime,
+      closingTime,
+      isOpen24Hours,
+    } = sanitize(req.body);
+
+    if (!contactPersonName || !phoneNumber) {
+      return res.status(400).json({ message: "Contact person and phone number are required" });
+    }
+
+    const isAlwaysOpen = isOpen24Hours === true || isOpen24Hours === "true";
+
+    if (!isAlwaysOpen && (!openingTime || !closingTime)) {
+      return res.status(400).json({ message: "Opening and closing time are required" });
+    }
+
+    const bloodBank = await BloodBank.findOneAndUpdate(
+      { userId: req.user._id },
+      {
+        $set: {
+          contactPersonName,
+          phoneNumber,
+          workingHours: {
+            openingTime: isAlwaysOpen ? "" : openingTime,
+            closingTime: isAlwaysOpen ? "" : closingTime,
+            isOpen24Hours: isAlwaysOpen,
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    )
+      .populate("userId", "email username phoneNumber role picture createdAt")
+      .lean();
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank profile not found" });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      username: contactPersonName,
+      phoneNumber,
+    });
+
+    return res.json({
+      message: "Blood bank profile updated successfully",
+      bloodBank,
+    });
+  } catch (error) {
+    console.error("Blood bank profile update error:", error);
+    return res.status(500).json({ message: "Unable to update blood bank profile" });
+  }
+};
+
 export const updateBloodBankStatusForAdmin = async (req, res) => {
   try {
     const { status, reason } = sanitize(req.body);
@@ -138,6 +212,8 @@ export const updateBloodBankStatusForAdmin = async (req, res) => {
 
     await bloodBank.save();
 
+    await User.findByIdAndUpdate(bloodBank.userId,{accountStatus:"active"})
+
     const updatedBloodBank = await BloodBank.findById(bloodBank._id)
       .populate("userId", "email username phoneNumber role createdAt")
       .populate("review.approvedBy", "username email")
@@ -161,6 +237,43 @@ export const getNearbyBloodBanks = async (req, res) => {
   try {
     let longitude = Number(req.query.longitude);
     let latitude = Number(req.query.latitude);
+
+     const inventory=[
+    {
+      "bloodGroup": "O+",
+      "type": "PRBC",
+      "processingFee": 1200,
+      "unitsAvailable": 10,
+    },
+    {
+      "bloodGroup": "O+",
+      "type": "Platelets",
+      "processingFee": 1500,
+      "unitsAvailable": 5,
+    },
+    {
+      "bloodGroup": "AB+",
+      "type": "Plasma",
+      "processingFee": 900,
+      "unitsAvailable": 8,
+    }
+  ]
+
+  const updatedBloodBank = await BloodBank.findOneAndUpdate(
+      { _id: "6a7733ec2ad7cce1509ac6b1" },
+      {
+        $set: {
+          inventory,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+        returnDocument:"after"
+      }
+    ).select("inventory");
+
+    console.log("updatedBloodBank",updatedBloodBank);
 
     if (
       !Number.isFinite(longitude) ||
@@ -314,11 +427,12 @@ export const registerBloodBank = async (req, res) => {
     });
 
     createdUser = await User.create({
-      username: bloodBankName,
+      username: contactPersonName,
       email,
       password,
       phoneNumber,
       role: "BloodBank",
+      accountStatus:"pending"
     });
 
     const bloodBank=await BloodBank.create({

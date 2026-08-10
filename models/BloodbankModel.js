@@ -142,6 +142,31 @@ const bloodBankSchema = new Schema(
       default: "Pending",
       index: true,
     },
+    activityHistory: [
+      {
+        action: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        status: {
+          type: String,
+          enum: ["Pending", "Approved", "Rejected", "Suspended"],
+        },
+        note: {
+          type: String,
+          trim: true,
+        },
+        performedBy: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+        },
+        performedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     inventory: [
       {
         bloodGroup: {
@@ -149,8 +174,22 @@ const bloodBankSchema = new Schema(
           enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
           required: true,
         },
+
+        type: {
+          type: String,
+          enum: ["PRBC", "Platelets", "Plasma"],
+          required: true,
+        },
+
+        processingFee: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
+
         unitsAvailable: {
           type: Number,
+          required: true,
           default: 0,
           min: 0,
         },

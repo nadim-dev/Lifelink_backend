@@ -77,6 +77,12 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Please set a password from your profile before using email login" });
     }
 
+    if (user.role === "BloodBank" && user.accountStatus !== "active") {
+     return res.status(403).json({
+    message: "Your blood bank registration is awaiting admin approval."
+  });
+}
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {

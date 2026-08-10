@@ -27,6 +27,11 @@ const userSchema=new Schema({
   ],  
     default:"User"
   },
+  accountStatus: {
+  type: String,
+  enum: ["pending", "active", "rejected", "suspended"],
+  default: "active"
+},
   isDonor:{
     type:Boolean,
     default:false
