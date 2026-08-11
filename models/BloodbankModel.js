@@ -193,6 +193,16 @@ const bloodBankSchema = new Schema(
           default: 0,
           min: 0,
         },
+        expiryDate: {
+         type: Date,
+         required: true,
+        },
+         unitsCommitted: {
+            type: Number,
+            required: true,
+            default: 0,
+            min: 0,
+         }
       },
     ],
   },

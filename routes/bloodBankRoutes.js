@@ -1,12 +1,15 @@
 import express from "express";
 import multer from "multer";
 import {
+  addMyBloodBankInventory,
+  deleteMyBloodBankInventory,
   getAllBloodBanksForAdmin,
   getBloodBankForAdmin,
   getMyBloodBankProfile,
   getNearbyBloodBanks,
   getPublicBloodBank,
   registerBloodBank,
+  updateMyBloodBankInventory,
   updateMyBloodBankProfile,
   updateBloodBankStatusForAdmin,
 } from "../controllers/bloodBankController.js";
@@ -19,6 +22,9 @@ const router = express.Router();
 router.get("/nearby", checkAuth, getNearbyBloodBanks);
 router.get("/me/profile", checkAuth, allowRoles("BloodBank"), getMyBloodBankProfile);
 router.patch("/me/profile", checkAuth, allowRoles("BloodBank"), updateMyBloodBankProfile);
+router.post("/me/inventory", checkAuth, allowRoles("BloodBank"), addMyBloodBankInventory);
+router.patch("/me/inventory/:inventoryId", checkAuth, allowRoles("BloodBank"), updateMyBloodBankInventory);
+router.delete("/me/inventory/:inventoryId", checkAuth, allowRoles("BloodBank"), deleteMyBloodBankInventory);
 router.get("/admin/all", checkAuth, allowRoles("Admin"), getAllBloodBanksForAdmin);
 router.get("/admin/:bloodBankId", checkAuth, allowRoles("Admin"), getBloodBankForAdmin);
 router.patch("/admin/:bloodBankId/status", checkAuth, allowRoles("Admin"), updateBloodBankStatusForAdmin);

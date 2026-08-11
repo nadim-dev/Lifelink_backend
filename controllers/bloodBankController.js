@@ -154,6 +154,159 @@ export const updateMyBloodBankProfile = async (req, res) => {
   }
 };
 
+export const addMyBloodBankInventory = async (req, res) => {
+  try {
+    const allowedBloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+    const allowedTypes = ["PRBC", "Platelets", "Plasma"];
+    const { bloodGroup, type, expiryDate } = req.body;
+    const unitsAvailable = Number(req.body.unitsAvailable);
+    const unitsCommitted = Number(req.body.unitsCommitted || 0);
+    const processingFee = Number(req.body.processingFee);
+    const parsedExpiryDate = new Date(expiryDate);
+
+    if (!allowedBloodGroups.includes(bloodGroup)) {
+      return res.status(400).json({ message: "Invalid blood group" });
+    }
+
+    if (!allowedTypes.includes(type)) {
+      return res.status(400).json({ message: "Invalid component type" });
+    }
+
+    if (
+      !Number.isFinite(unitsAvailable) ||
+      unitsAvailable < 0 ||
+      !Number.isFinite(unitsCommitted) ||
+      unitsCommitted < 0 ||
+      !Number.isFinite(processingFee) ||
+      processingFee < 0
+    ) {
+      return res.status(400).json({ message: "Inventory quantities and fee must be valid numbers" });
+    }
+
+    if (Number.isNaN(parsedExpiryDate.getTime())) {
+      return res.status(400).json({ message: "Expiry date is required" });
+    }
+
+    const bloodBank = await BloodBank.findOneAndUpdate(
+      { userId: req.user._id },
+      {
+        $push: {
+          inventory: {
+            bloodGroup,
+            type,
+            unitsAvailable,
+            unitsCommitted,
+            processingFee,
+            expiryDate: parsedExpiryDate,
+          },
+        },
+      },
+      { new: true, runValidators: true },
+    )
+      .populate("userId", "email username phoneNumber role picture createdAt")
+      .lean();
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank profile not found" });
+    }
+
+    return res.status(201).json({
+      message: "Inventory added successfully",
+      bloodBank,
+    });
+  } catch (error) {
+    console.error("Blood bank inventory add error:", error);
+    return res.status(500).json({ message: "Unable to add inventory" });
+  }
+};
+
+export const deleteMyBloodBankInventory = async (req, res) => {
+  try {
+    const bloodBank = await BloodBank.findOne({ userId: req.user._id });
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank profile not found" });
+    }
+
+    const inventoryItem = bloodBank.inventory.id(req.params.inventoryId);
+
+    if (!inventoryItem) {
+      return res.status(404).json({ message: "Inventory item not found" });
+    }
+
+    if (Number(inventoryItem.unitsCommitted || 0) > 0) {
+      return res.status(400).json({
+        message: "Inventory with committed blood cannot be deleted",
+      });
+    }
+
+    inventoryItem.deleteOne();
+    await bloodBank.save();
+
+    const updatedBloodBank = await BloodBank.findById(bloodBank._id)
+      .populate("userId", "email username phoneNumber role picture createdAt")
+      .lean();
+
+    return res.json({
+      message: "Inventory deleted successfully",
+      bloodBank: updatedBloodBank,
+    });
+  } catch (error) {
+    console.error("Blood bank inventory delete error:", error);
+    return res.status(500).json({ message: "Unable to delete inventory" });
+  }
+};
+
+export const updateMyBloodBankInventory = async (req, res) => {
+  try {
+    const unitsAvailable = Number(req.body.unitsAvailable);
+    const processingFee = Number(req.body.processingFee);
+    const parsedExpiryDate = new Date(req.body.expiryDate);
+
+    if (!Number.isFinite(unitsAvailable) || unitsAvailable < 0) {
+      return res.status(400).json({ message: "Units available must be a valid number" });
+    }
+
+    if (!Number.isFinite(processingFee) || processingFee < 0) {
+      return res.status(400).json({ message: "Processing fee must be a valid number" });
+    }
+
+    if (Number.isNaN(parsedExpiryDate.getTime())) {
+      return res.status(400).json({ message: "Expiry date is required" });
+    }
+
+    const bloodBank = await BloodBank.findOne({ userId: req.user._id });
+
+    if (!bloodBank) {
+      return res.status(404).json({ message: "Blood bank profile not found" });
+    }
+
+    const inventoryItem = bloodBank.inventory.id(req.params.inventoryId);
+
+    if (!inventoryItem) {
+      return res.status(404).json({ message: "Inventory item not found" });
+    }
+
+    inventoryItem.unitsAvailable = unitsAvailable;
+    inventoryItem.processingFee = processingFee;
+    inventoryItem.expiryDate = parsedExpiryDate;
+
+    await bloodBank.save();
+
+    const updatedBloodBank = await BloodBank.findById(bloodBank._id)
+      .populate("userId", "email username phoneNumber role picture createdAt")
+      .lean();
+
+    return res.json({
+      message: "Inventory updated successfully",
+      bloodBank: updatedBloodBank,
+    });
+  } catch (error) {
+    console.error("Blood bank inventory update error:", error);
+    return res.status(500).json({ message: "Unable to update inventory" });
+  }
+};
+
 export const updateBloodBankStatusForAdmin = async (req, res) => {
   try {
     const { status, reason } = sanitize(req.body);
@@ -238,29 +391,161 @@ export const getNearbyBloodBanks = async (req, res) => {
     let longitude = Number(req.query.longitude);
     let latitude = Number(req.query.latitude);
 
-     const inventory=[
-    {
-      "bloodGroup": "O+",
-      "type": "PRBC",
-      "processingFee": 1200,
-      "unitsAvailable": 10,
-    },
-    {
-      "bloodGroup": "O+",
-      "type": "Platelets",
-      "processingFee": 1500,
-      "unitsAvailable": 5,
-    },
-    {
-      "bloodGroup": "AB+",
-      "type": "Plasma",
-      "processingFee": 900,
-      "unitsAvailable": 8,
-    }
-  ]
+    const inventory= [
+  {
+    bloodGroup: "O+",
+    type: "PRBC",
+    processingFee: 500,
+    unitsAvailable: 25,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-08-01"),
+    expiryDate: new Date("2026-08-29"),
+  },
+  {
+    bloodGroup: "O+",
+    type: "PRBC",
+    processingFee: 500,
+    unitsAvailable: 15,
+    unitsCommitted: 5,
+    collectionDate: new Date("2026-08-05"),
+    expiryDate: new Date("2026-09-02"),
+  },
+  {
+    bloodGroup: "O-",
+    type: "PRBC",
+    processingFee: 550,
+    unitsAvailable: 8,
+    unitsCommitted: 2,
+    collectionDate: new Date("2026-08-03"),
+    expiryDate: new Date("2026-08-31"),
+  },
+  {
+    bloodGroup: "A+",
+    type: "PRBC",
+    processingFee: 450,
+    unitsAvailable: 30,
+    unitsCommitted: 8,
+    collectionDate: new Date("2026-07-28"),
+    expiryDate: new Date("2026-08-25"),
+  },
+  {
+    bloodGroup: "A-",
+    type: "PRBC",
+    processingFee: 500,
+    unitsAvailable: 6,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-08-02"),
+    expiryDate: new Date("2026-08-30"),
+  },
+  {
+    bloodGroup: "B+",
+    type: "PRBC",
+    processingFee: 450,
+    unitsAvailable: 22,
+    unitsCommitted: 4,
+    collectionDate: new Date("2026-07-30"),
+    expiryDate: new Date("2026-08-27"),
+  },
+  {
+    bloodGroup: "B-",
+    type: "PRBC",
+    processingFee: 500,
+    unitsAvailable: 4,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-08-04"),
+    expiryDate: new Date("2026-09-01"),
+  },
+  {
+    bloodGroup: "AB+",
+    type: "PRBC",
+    processingFee: 550,
+    unitsAvailable: 12,
+    unitsCommitted: 3,
+    collectionDate: new Date("2026-07-29"),
+    expiryDate: new Date("2026-08-24"),
+  },
+  {
+    bloodGroup: "AB-",
+    type: "PRBC",
+    processingFee: 600,
+    unitsAvailable: 2,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-08-06"),
+    expiryDate: new Date("2026-09-04"),
+  },
+
+  // Platelets
+  {
+    bloodGroup: "O+",
+    type: "Platelets",
+    processingFee: 700,
+    unitsAvailable: 10,
+    unitsCommitted: 2,
+    collectionDate: new Date("2026-08-09"),
+    expiryDate: new Date("2026-08-14"),
+  },
+  {
+    bloodGroup: "A+",
+    type: "Platelets",
+    processingFee: 700,
+    unitsAvailable: 7,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-08-08"),
+    expiryDate: new Date("2026-08-13"),
+  },
+  {
+    bloodGroup: "B+",
+    type: "Platelets",
+    processingFee: 650,
+    unitsAvailable: 5,
+    unitsCommitted: 1,
+    collectionDate: new Date("2026-08-07"),
+    expiryDate: new Date("2026-08-15"),
+  },
+
+  // Plasma
+  {
+    bloodGroup: "O+",
+    type: "Plasma",
+    processingFee: 300,
+    unitsAvailable: 18,
+    unitsCommitted: 4,
+    collectionDate: new Date("2026-07-20"),
+    expiryDate: new Date("2027-01-16"),
+  },
+  {
+    bloodGroup: "A+",
+    type: "Plasma",
+    processingFee: 300,
+    unitsAvailable: 14,
+    unitsCommitted: 2,
+    collectionDate: new Date("2026-07-25"),
+    expiryDate: new Date("2027-01-21"),
+  },
+  {
+    bloodGroup: "B+",
+    type: "Plasma",
+    processingFee: 350,
+    unitsAvailable: 9,
+    unitsCommitted: 0,
+    collectionDate: new Date("2026-07-27"),
+    expiryDate: new Date("2027-01-23"),
+  },
+  {
+    bloodGroup: "AB+",
+    type: "Plasma",
+    processingFee: 350,
+    unitsAvailable: 6,
+    unitsCommitted: 1,
+    collectionDate: new Date("2026-07-26"),
+    expiryDate: new Date("2027-01-22"),
+  },
+   ]
+
+     
 
   const updatedBloodBank = await BloodBank.findOneAndUpdate(
-      { _id: "6a7733ec2ad7cce1509ac6b1" },
+      { _id: "6a79bee0a689e74d9373238d" },
       {
         $set: {
           inventory,
