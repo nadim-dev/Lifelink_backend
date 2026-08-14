@@ -13,7 +13,15 @@ import {
   updateMyBloodBankProfile,
   updateBloodBankStatusForAdmin,
 } from "../controllers/bloodBankController.js";
-import { cancelMyBloodRequest, createBloodRequest, getMyBloodRequests } from "../controllers/bloodRequestController.js";
+import {
+  approveIncomingBloodBankRequest,
+  cancelMyBloodRequest,
+  createBloodRequest,
+  getIncomingBloodBankRequests,
+  getMyBloodRequests,
+  markIncomingBloodBankRequestReadyToDispatch,
+  rejectIncomingBloodBankRequest,
+} from "../controllers/bloodRequestController.js";
 import { uploadBloodBankLicense } from "../middleware/bloodBankUpload.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 
@@ -28,6 +36,10 @@ router.delete("/me/inventory/:inventoryId", checkAuth, allowRoles("BloodBank"), 
 router.get("/admin/all", checkAuth, allowRoles("Admin"), getAllBloodBanksForAdmin);
 router.get("/admin/:bloodBankId", checkAuth, allowRoles("Admin"), getBloodBankForAdmin);
 router.patch("/admin/:bloodBankId/status", checkAuth, allowRoles("Admin"), updateBloodBankStatusForAdmin);
+router.get("/requests/incoming", checkAuth, allowRoles("BloodBank"), getIncomingBloodBankRequests);
+router.patch("/requests/incoming/:requestId/approve", checkAuth, allowRoles("BloodBank"), approveIncomingBloodBankRequest);
+router.patch("/requests/incoming/:requestId/ready-to-dispatch", checkAuth, allowRoles("BloodBank"), markIncomingBloodBankRequestReadyToDispatch);
+router.patch("/requests/incoming/:requestId/reject", checkAuth, allowRoles("BloodBank"), rejectIncomingBloodBankRequest);
 router.get("/requests/my", checkAuth, allowRoles("User"), getMyBloodRequests);
 router.patch("/requests/:requestId/cancel", checkAuth, allowRoles("User"), cancelMyBloodRequest);
 router.post("/:bloodBankId/requests", checkAuth, allowRoles("User"), createBloodRequest);

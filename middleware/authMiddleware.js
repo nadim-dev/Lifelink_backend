@@ -31,11 +31,12 @@ export default async function checkAuth(req,res,next){
 export const allowRoles = (...roles) => {
     return async (req, res, next) => {
         const user=await User.findById(req.user._id).lean();
+        console.log("user",user);
 
         if (!roles.includes(user.role)) {
             return res.status(403).json({ message: 'Forbidden' });
         }
-        req.user=user;
+        req.user=user;      
         next();
     };
 };

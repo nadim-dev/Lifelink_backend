@@ -150,6 +150,27 @@ const bloodRequestSchema = new Schema(
       type: Date,
     },
 
+    // User-visible request tracking timeline
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: [
+            "Pending",
+            "Approved",
+            "Rejected",
+            "Cancelled",
+            "Completed",
+          ],
+          required: true,
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     // Delivery information
     deliveryPartnerId: {
       type: Schema.Types.ObjectId,
@@ -162,6 +183,7 @@ const bloodRequestSchema = new Schema(
       type: String,
       enum: [
         "NotAssigned",
+        "ReadyToDispatch",
         "Assigned",
         "PickedUp",
         "OutForDelivery",

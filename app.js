@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import geocodingRoutes from "./routes/geocodingRoutes.js"
 import bloodBankRoutes from "./routes/bloodBankRoutes.js";
+import deliveryPartnerRoutes from "./routes/deliveryPartnerRoutes.js";
 
 try{
 await connectDB();
@@ -33,6 +34,7 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/notifications",notificationRoutes);
 app.use("/api/geocoding", geocodingRoutes);
 app.use("/api/blood-banks", bloodBankRoutes);
+app.use("/api/delivery-partners", deliveryPartnerRoutes);
 
 
 app.listen(PORT,()=>{
