@@ -683,6 +683,7 @@ export const getCompletedDeliveries = async (req, res) => {
     const deliveryPartner = await DeliveryPartner.findOne({ userId: req.user._id }).select("_id fullName phoneNumber").lean();
     if (!deliveryPartner) return res.status(404).json({ message: "Delivery partner profile not found." });
 
+    
     const deliveries = await BloodRequest.find({ deliveryPartnerId: deliveryPartner._id, deliveryStatus: "Delivered" })
       .select("requestNumber items patient deliveryAddress payment deliveryStatus deliveryStatusHistory updatedAt createdAt bloodBankId")
       .populate("bloodBankId", "bloodBankName address")

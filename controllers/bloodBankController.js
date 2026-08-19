@@ -310,11 +310,6 @@ export const updateMyBloodBankInventory = async (req, res) => {
 export const updateBloodBankStatusForAdmin = async (req, res) => {
   try {
     const { status, reason } = sanitize(req.body);
-    const allowedStatuses = ["Approved", "Rejected", "Suspended", "Pending"];
-
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid blood bank status" });
-    }
 
     if ((status === "Rejected" || status === "Suspended") && !reason?.trim()) {
       return res.status(400).json({ message: "A reason is required for this action" });
@@ -326,55 +321,27 @@ export const updateBloodBankStatusForAdmin = async (req, res) => {
       return res.status(404).json({ message: "Blood bank not found" });
     }
 
-    const previousStatus = bloodBank.status;
-    const now = new Date();
-    bloodBank.status = status;
+    const update = { $set: { status } };
+    if (status === "Rejected") update.$set["review.rejectionReason"] = reason.trim();
+    if (status === "Suspended") update.$set["review.suspensionReason"] = reason.trim();
 
-    if (status === "Approved") {
-      bloodBank.review.approvedAt = now;
-      bloodBank.review.approvedBy = req.user._id;
-      bloodBank.review.rejectionReason = undefined;
-    }
-
-    if (status === "Rejected") {
-      bloodBank.review.rejectedAt = now;
-      bloodBank.review.rejectedBy = req.user._id;
-      bloodBank.review.rejectionReason = reason.trim();
-    }
-
-    if (status === "Suspended") {
-      bloodBank.review.suspendedAt = now;
-      bloodBank.review.suspendedBy = req.user._id;
-      bloodBank.review.suspensionReason = reason.trim();
-      bloodBank.review.previousStatus = previousStatus;
-    }
-
-    if (status === "Pending" && previousStatus === "Suspended") {
-      bloodBank.review.reactivatedAt = now;
-      bloodBank.review.reactivatedBy = req.user._id;
-      bloodBank.review.previousStatus = previousStatus;
-    }
-
-    bloodBank.activityHistory.push({
-      action: `Status changed to ${status}`,
-      status,
-      note: reason?.trim() || "",
-      performedBy: req.user._id,
-      performedAt: now,
-    });
-
-    await bloodBank.save();
-
-    await User.findByIdAndUpdate(bloodBank.userId,{accountStatus:"active"})
-
-    const updatedBloodBank = await BloodBank.findById(bloodBank._id)
+    const updatedBloodBank = await BloodBank.findByIdAndUpdate(
+      bloodBank._id,
+      update,
+      { new: true, runValidators: true },
+    )
       .populate("userId", "email username phoneNumber role createdAt")
-      .populate("review.approvedBy", "username email")
-      .populate("review.rejectedBy", "username email")
-      .populate("review.suspendedBy", "username email")
-      .populate("review.reactivatedBy", "username email")
-      .populate("activityHistory.performedBy", "username email")
       .lean();
+
+    const accountStatusByBloodBankStatus = {
+      Approved: "active",
+      Pending: "pending",
+      Rejected: "rejected",
+      Suspended: "suspended",
+    };
+    await User.findByIdAndUpdate(bloodBank.userId, {
+      accountStatus: accountStatusByBloodBankStatus[status],
+    });
 
     return res.json({
       message: "Blood bank status updated successfully",

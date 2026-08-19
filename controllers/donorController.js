@@ -167,3 +167,27 @@ export const updateCurrentUserDonor = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+export const getAllUsersStats = async (req, res) => {
+  try {
+    const [total, donors, suspended] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ isDonor: true }),
+      User.countDocuments({ accountStatus: "suspended" }),
+    ]);
+
+    return res.status(200).json({
+      stats: {
+        total,
+        donors,
+        suspended,
+        active: Math.max(total - suspended, 0),
+      },
+    });
+  } catch (err) {
+    console.log(err.message);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+

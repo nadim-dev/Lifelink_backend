@@ -86,6 +86,10 @@ export const loginUser = async (req, res) => {
 }
 
 
+ if (user.role == "User" && user.accountStatus == "suspended")
+  return res.status(403).json({message: "Your account is suspended by admin."});
+
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -297,7 +301,7 @@ export const loginWithGoogle = async (req, res) => {
 
     try {
       const profileData = await verifyIdToken(id_token);
-      console.log(profileData);
+
       const {name, email, picture} = profileData;
 
       let user = await User.findOne({ email }).lean();
