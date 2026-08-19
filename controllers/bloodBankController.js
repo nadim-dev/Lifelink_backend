@@ -387,186 +387,22 @@ export const updateBloodBankStatusForAdmin = async (req, res) => {
 };
 
 export const getNearbyBloodBanks = async (req, res) => {
+  console.log("get NearbyBlood banks controller is running");
+
+  console.log("query",req.query);
+
   try {
     let longitude = Number(req.query.longitude);
     let latitude = Number(req.query.latitude);
-
-    const inventory= [
-  {
-    bloodGroup: "O+",
-    type: "PRBC",
-    processingFee: 500,
-    unitsAvailable: 25,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-08-01"),
-    expiryDate: new Date("2026-08-29"),
-  },
-  {
-    bloodGroup: "O+",
-    type: "PRBC",
-    processingFee: 500,
-    unitsAvailable: 15,
-    unitsCommitted: 5,
-    collectionDate: new Date("2026-08-05"),
-    expiryDate: new Date("2026-09-02"),
-  },
-  {
-    bloodGroup: "O-",
-    type: "PRBC",
-    processingFee: 550,
-    unitsAvailable: 8,
-    unitsCommitted: 2,
-    collectionDate: new Date("2026-08-03"),
-    expiryDate: new Date("2026-08-31"),
-  },
-  {
-    bloodGroup: "A+",
-    type: "PRBC",
-    processingFee: 450,
-    unitsAvailable: 30,
-    unitsCommitted: 8,
-    collectionDate: new Date("2026-07-28"),
-    expiryDate: new Date("2026-08-25"),
-  },
-  {
-    bloodGroup: "A-",
-    type: "PRBC",
-    processingFee: 500,
-    unitsAvailable: 6,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-08-02"),
-    expiryDate: new Date("2026-08-30"),
-  },
-  {
-    bloodGroup: "B+",
-    type: "PRBC",
-    processingFee: 450,
-    unitsAvailable: 22,
-    unitsCommitted: 4,
-    collectionDate: new Date("2026-07-30"),
-    expiryDate: new Date("2026-08-27"),
-  },
-  {
-    bloodGroup: "B-",
-    type: "PRBC",
-    processingFee: 500,
-    unitsAvailable: 4,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-08-04"),
-    expiryDate: new Date("2026-09-01"),
-  },
-  {
-    bloodGroup: "AB+",
-    type: "PRBC",
-    processingFee: 550,
-    unitsAvailable: 12,
-    unitsCommitted: 3,
-    collectionDate: new Date("2026-07-29"),
-    expiryDate: new Date("2026-08-24"),
-  },
-  {
-    bloodGroup: "AB-",
-    type: "PRBC",
-    processingFee: 600,
-    unitsAvailable: 2,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-08-06"),
-    expiryDate: new Date("2026-09-04"),
-  },
-
-  // Platelets
-  {
-    bloodGroup: "O+",
-    type: "Platelets",
-    processingFee: 700,
-    unitsAvailable: 10,
-    unitsCommitted: 2,
-    collectionDate: new Date("2026-08-09"),
-    expiryDate: new Date("2026-08-14"),
-  },
-  {
-    bloodGroup: "A+",
-    type: "Platelets",
-    processingFee: 700,
-    unitsAvailable: 7,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-08-08"),
-    expiryDate: new Date("2026-08-13"),
-  },
-  {
-    bloodGroup: "B+",
-    type: "Platelets",
-    processingFee: 650,
-    unitsAvailable: 5,
-    unitsCommitted: 1,
-    collectionDate: new Date("2026-08-07"),
-    expiryDate: new Date("2026-08-15"),
-  },
-
-  // Plasma
-  {
-    bloodGroup: "O+",
-    type: "Plasma",
-    processingFee: 300,
-    unitsAvailable: 18,
-    unitsCommitted: 4,
-    collectionDate: new Date("2026-07-20"),
-    expiryDate: new Date("2027-01-16"),
-  },
-  {
-    bloodGroup: "A+",
-    type: "Plasma",
-    processingFee: 300,
-    unitsAvailable: 14,
-    unitsCommitted: 2,
-    collectionDate: new Date("2026-07-25"),
-    expiryDate: new Date("2027-01-21"),
-  },
-  {
-    bloodGroup: "B+",
-    type: "Plasma",
-    processingFee: 350,
-    unitsAvailable: 9,
-    unitsCommitted: 0,
-    collectionDate: new Date("2026-07-27"),
-    expiryDate: new Date("2027-01-23"),
-  },
-  {
-    bloodGroup: "AB+",
-    type: "Plasma",
-    processingFee: 350,
-    unitsAvailable: 6,
-    unitsCommitted: 1,
-    collectionDate: new Date("2026-07-26"),
-    expiryDate: new Date("2027-01-22"),
-  },
-   ]
-
-     
-
-  const updatedBloodBank = await BloodBank.findOneAndUpdate(
-      { _id: "6a79bee0a689e74d9373238d" },
-      {
-        $set: {
-          inventory,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-        returnDocument:"after"
-      }
-    ).select("inventory");
-
-    console.log("updatedBloodBank",updatedBloodBank);
 
     if (
       !Number.isFinite(longitude) ||
       !Number.isFinite(latitude)
     ) {
+
       const user = await User.findById(req.user._id).select("location").lean();
       const coordinates = user?.location?.coordinates;
-
+     
       if (
         !Array.isArray(coordinates) ||
         coordinates.length !== 2 ||

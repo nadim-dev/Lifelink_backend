@@ -1,6 +1,7 @@
 
 
 export const autocompleteAddress = async (req, res) => {
+  console.log("autocomplete function is running");
   try {
     const { q } = req.query;
 
@@ -31,7 +32,7 @@ export const autocompleteAddress = async (req, res) => {
 
     const results = data.features.map((feature) => {
       const properties = feature.properties;
-      
+      console.log("properties",properties)
       return {
         formatted: properties.formatted,
         latitude: properties.lat,

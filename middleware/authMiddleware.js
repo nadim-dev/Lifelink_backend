@@ -2,9 +2,8 @@ import redisClient from "../config/redis.js";
 import User from "../models/userModel.js";
 
 export default async function checkAuth(req,res,next){
-  console.log("auth function is running");
+
   const sessionId=req.signedCookies.sid;
-   console.log("sessionId",sessionId);
 
   if(!sessionId){
       res.clearCookie("sid"); // if user manipulate session id then we will clear his cookie
@@ -18,26 +17,24 @@ export default async function checkAuth(req,res,next){
     res.clearCookie("sid");
     return res.status(401).json({"error":"not logged in"});
   }
-  console.log("session of authmiddleware", session);
+  
   if (!session || Object.keys(session).length === 0) {
       res.clearCookie("sid");
       return res.status(401).json({"message":"not logged in"})
   }
 
-  req.user={_id:session.userId};
+  req.user={_id:session.userId,role:session.role};
   next();
 }
 
 export const allowRoles = (...roles) => {
     return async (req, res, next) => {
-        const user=await User.findById(req.user._id).lean();
-        console.log("user",user);
+        const role=req.user.role;
 
-        if (!roles.includes(user.role)) {
+        if (!roles.includes(role)) {
             return res.status(403).json({ message: 'Forbidden' });
         }
-        req.user=user;      
+
         next();
     };
 };
-

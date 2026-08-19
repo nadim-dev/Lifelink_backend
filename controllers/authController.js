@@ -77,11 +77,14 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Please set a password from your profile before using email login" });
     }
 
-    if (user.role === "BloodBank" && user.accountStatus !== "active") {
-     return res.status(403).json({
-    message: "Your blood bank registration is awaiting admin approval."
+ if (["BloodBank", "DeliveryPartner","Hospital"].includes(user.role) &&
+  user.accountStatus !== "active"
+) {
+  return res.status(403).json({
+    message: "Your registration is awaiting admin approval.",
   });
 }
+
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
@@ -95,8 +98,10 @@ export const loginUser = async (req, res) => {
 
     await redisClient.hSet(rediskey, {
       userId: user._id.toString(),
+      role:user.role,
       createdAt: Date.now(),
     });
+    
     await redisClient.expire(rediskey, sessionExpiryTime);
 
     res.cookie("sid", sessionId, {
@@ -323,6 +328,7 @@ export const loginWithGoogle = async (req, res) => {
       await redisClient.hSet(rediskey, {
         userId: user._id.toString(),
         createdAt: Date.now(),
+        role:user.role,
       });
       await redisClient.expire(rediskey, sessionExpiryTime);
 

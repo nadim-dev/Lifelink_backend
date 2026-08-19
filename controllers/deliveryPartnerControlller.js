@@ -71,6 +71,7 @@ export const registerDeliveryPartner = async (req, res) => {
     });
 
     await DeliveryPartner.create({
+      userId: createdUser._id,
       fullName,
       email,
       phoneNumber,
@@ -195,9 +196,10 @@ export const updateDeliveryPartnerStatus = async (req, res) => {
 const updatePartnerAccount = async (req, res, accountStatus, message) => {
   try {
     const userAccountStatus = accountStatus === "approved" ? "active" : accountStatus;
+    const availabilityStatus = accountStatus === "approved" ? "available" : "offline";
     const partner = await DeliveryPartner.findByIdAndUpdate(
       req.params.partnerId,
-      { accountStatus },
+      { accountStatus, availabilityStatus },
       { new: true, runValidators: true },
     ).select(deliveryPartnerSelect);
 

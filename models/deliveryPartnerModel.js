@@ -2,6 +2,13 @@ import { Schema, model } from "mongoose";
 
 const deliveryPartnerSchema = new Schema(
   {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+
     // Account Details
     fullName: {
       type: String,

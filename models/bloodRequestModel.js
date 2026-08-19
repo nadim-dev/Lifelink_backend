@@ -58,6 +58,23 @@ const bloodRequestSchema = new Schema(
       },
     ],
 
+  pickupVerification: {
+      otpHash: {
+        type: String,
+        default: null,
+      },
+    
+      expiresAt: {
+        type: Date,
+        default: null,
+      },
+    
+      verifiedAt: {
+        type: Date,
+        default: null,
+      },
+  },
+  
     // Person who will receive the blood
     patient: {
       name: {
@@ -142,14 +159,6 @@ const bloodRequestSchema = new Schema(
       maxlength: 500,
     },
 
-    approvedAt: {
-      type: Date,
-    },
-
-    rejectedAt: {
-      type: Date,
-    },
-
     // User-visible request tracking timeline
     statusHistory: [
       {
@@ -183,14 +192,38 @@ const bloodRequestSchema = new Schema(
       type: String,
       enum: [
         "NotAssigned",
-        "ReadyToDispatch",
+        "Searching",
         "Assigned",
+        "OnTheWayToPickup",
         "PickedUp",
         "OutForDelivery",
         "Delivered",
       ],
       default: "NotAssigned",
     },
+
+    deliveryStatusHistory: [
+  {
+    status: {
+      type: String,
+      enum: [
+         "NotAssigned",
+         "Searching",
+         "Assigned",
+         "OnTheWayToPickup",
+         "PickedUp",
+         "OutForDelivery",
+         "Delivered"
+      ],
+      required: true,
+    },
+
+    changedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+     ],
 
     // Payment information
     payment: {
@@ -229,7 +262,7 @@ const bloodRequestSchema = new Schema(
     default: null,
   },
 }
-  },
+     },
   {
     timestamps: true,
     versionKey: false,
