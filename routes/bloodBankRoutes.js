@@ -1,29 +1,7 @@
 import express from "express";
 import multer from "multer";
-import {
-  addMyBloodBankInventory,
-  deleteMyBloodBankInventory,
-  getAllBloodBanksForAdmin,
-  getBloodBankForAdmin,
-  getMyBloodBankProfile,
-  getNearbyBloodBanks,
-  getPublicBloodBank,
-  registerBloodBank,
-  updateMyBloodBankInventory,
-  updateMyBloodBankProfile,
-  updateBloodBankStatusForAdmin,
-} from "../controllers/bloodBankController.js";
-import {
-  approveIncomingBloodBankRequest,
-  cancelMyBloodRequest,
-  createBloodRequest,
-  getIncomingBloodBankRequests,
-  getMyBloodRequests,
-  getMyBloodRequestTracking,
-  generateDeliveryOtp,
-  markIncomingBloodBankRequestReadyToDispatch,
-  rejectIncomingBloodBankRequest,
-} from "../controllers/bloodRequestController.js";
+import {addMyBloodBankInventory,deleteMyBloodBankInventory,getAllBloodBanksForAdmin,getBloodBankForAdmin,getMyBloodBankProfile,getNearbyBloodBanks,getPublicBloodBank,registerBloodBank,updateMyBloodBankInventory,updateMyBloodBankProfile,updateBloodBankStatusForAdmin,getAIDemandPrediction} from "../controllers/bloodBankController.js";
+import {approveIncomingBloodBankRequest,cancelMyBloodRequest,createBloodRequest,getIncomingBloodBankRequests,getMyBloodRequests,getMyBloodRequestTracking,generateDeliveryOtp,markIncomingBloodBankRequestReadyToDispatch,rejectIncomingBloodBankRequest} from "../controllers/bloodRequestController.js";
 import { uploadBloodBankLicense } from "../middleware/bloodBankUpload.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 
@@ -47,8 +25,8 @@ router.get("/requests/my/:bloodRequestId/tracking", checkAuth, allowRoles("User"
 router.post("/requests/my/:bloodRequestId/delivery-otp", checkAuth, allowRoles("User"), generateDeliveryOtp);
 router.patch("/requests/:requestId/cancel", checkAuth, allowRoles("User"), cancelMyBloodRequest);
 router.post("/:bloodBankId/requests", checkAuth, allowRoles("User"), createBloodRequest);
+router.get("/demand-prediction", checkAuth, allowRoles("BloodBank"), getAIDemandPrediction);
 router.get("/:bloodBankId", checkAuth, allowRoles("Admin", "User"), getPublicBloodBank);
-
 router.post(
   "/register",
   uploadBloodBankLicense.single("licenseDocument"),

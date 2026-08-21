@@ -3,6 +3,8 @@ import BloodBank from "../models/BloodbankModel.js";
 import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
+import { generateDemandPrediction } from "../services/ai.service.js";
+import BloodRequest from "../models/bloodRequestModel.js";
 
 const getRouteDistanceInMeters = async ({ fromLatitude, fromLongitude, toLatitude, toLongitude }) => {
   if (!process.env.GEOAPIFY_API_KEY) return null;
@@ -591,5 +593,206 @@ export const registerBloodBank = async (req, res) => {
     }
 
     return res.status(500).json({ message: "Unable to register blood bank" });
+  }
+};
+
+
+const BLOOD_GROUPS = [
+  "A+",
+  "A-",
+  "B+",
+  "B-",
+  "AB+",
+  "AB-",
+  "O+",
+  "O-",
+];
+
+const COMPONENTS = [
+  "PRBC",
+  "Platelets",
+  "Plasma",
+];
+
+export const getAIDemandPrediction = async (req, res) => {
+  try {
+    console.log("AI prediction component is running");
+    const userId = req.user._id;
+
+    const now = new Date();
+
+    const sevenDaysAgo = new Date(
+      now.getTime() - 7 * 24 * 60 * 60 * 1000
+    );
+
+    const fourteenDaysAgo = new Date(
+      now.getTime() - 14 * 24 * 60 * 60 * 1000
+    );
+
+    const thirtyDaysAgo = new Date(
+      now.getTime() - 30 * 24 * 60 * 60 * 1000
+    );
+
+    // Fetch blood bank inventory
+    const bloodBank = await BloodBank.findOne({userId:userId})
+      .select("inventory")
+      .lean();
+
+    if (!bloodBank) {
+      return res.status(404).json({
+        success: false,
+        message: "Blood bank not found",
+      });
+    }
+
+    const bloodBankId=bloodBank._id;
+
+    // Fetch completed requests from the last 30 days
+    const requests = await BloodRequest.find({
+      bloodBankId,
+      requestStatus: "Completed",
+      createdAt: {
+        $gte: thirtyDaysAgo,
+      },
+    })
+      .select("items createdAt")
+      .lean();
+
+    const demandData = {};
+
+    // Analyze each blood component
+    for (const component of COMPONENTS) {
+      demandData[component] = {};
+
+      // Analyze each blood group
+      for (const bloodGroup of BLOOD_GROUPS) {
+        const matchingItems = [];
+
+        // Find matching items from completed requests
+        for (const request of requests) {
+          for (const item of request.items) {
+            if (
+              item.component === component &&
+              item.bloodGroup === bloodGroup
+            ) {
+              matchingItems.push({
+                quantity: item.quantity,
+                createdAt: request.createdAt,
+              });
+            }
+          }
+        }
+
+        // Demand during the last 7 days
+        const last7DaysDemand = matchingItems
+          .filter(
+            (item) => item.createdAt >= sevenDaysAgo
+          )
+          .reduce(
+            (total, item) =>
+              total + Number(item.quantity),
+            0
+          );
+
+        // Demand during the previous 7 days
+        const previous7DaysDemand = matchingItems
+          .filter(
+            (item) =>
+              item.createdAt >= fourteenDaysAgo &&
+              item.createdAt < sevenDaysAgo
+          )
+          .reduce(
+            (total, item) =>
+              total + Number(item.quantity),
+            0
+          );
+
+        // Total demand during the last 30 days
+        const last30DaysDemand = matchingItems.reduce(
+          (total, item) =>
+            total + Number(item.quantity),
+          0
+        );
+
+        // Find inventory for this component + blood group
+        const inventoryItem = bloodBank.inventory.find(
+          (item) =>
+            item.type === component &&
+            item.bloodGroup === bloodGroup
+        );
+
+        /*
+         * OPTION 1
+         *
+         * unitsAvailable = total physical stock
+         * unitsCommitted = stock reserved for approved requests
+         * currentStock = stock available for new requests
+         */
+
+        const totalStock =
+          inventoryItem?.unitsAvailable || 0;
+
+        const unitsCommitted =
+          inventoryItem?.unitsCommitted || 0;
+
+        const currentStock = Math.max(
+          0,
+          totalStock - unitsCommitted
+        );
+
+        // Calculate weekly demand trend
+        let percentageChange = 0;
+
+        if (previous7DaysDemand > 0) {
+          percentageChange = Number(
+            (
+              ((last7DaysDemand -
+                previous7DaysDemand) /
+                previous7DaysDemand) *
+              100
+            ).toFixed(2)
+          );
+        } else if (last7DaysDemand > 0) {
+          percentageChange = 100;
+        }
+
+        // Final data sent to Grok
+        demandData[component][bloodGroup] = {
+          totalStock,
+          unitsCommitted,
+          currentStock,
+          last7DaysDemand,
+          previous7DaysDemand,
+          last30DaysDemand,
+          percentageChange,
+        };
+      }
+    }
+
+    // Send processed data to Groq
+    const prediction = await generateDemandPrediction({
+      forecastPeriod: "Next 7 Days",
+      generatedAt: now.toISOString(),
+      demandData,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "AI demand prediction generated successfully",
+      data: prediction,
+    });
+    
+  } catch (error) {
+    console.error(
+      "AI demand prediction error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to generate AI demand prediction",
+    });
   }
 };
