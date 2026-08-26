@@ -1,12 +1,26 @@
 import express from "express";
 import multer from "multer";
-import { getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, registerHospital, updateHospitalStatus } from "../controllers/hospitalController.js";
+import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor } from "../controllers/hospitalController.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadHospitalRegistrationDocument } from "../middleware/hospitalUpload.js";
+import { uploadProfilePicture } from "../middleware/profilePictureUpload.js";
 
 const router = express.Router();
 
 router.get("/nearby",checkAuth,getNearbyHospitals);
+
+router.post(
+  "/doctors",
+  checkAuth,
+  allowRoles("Hospital"),
+  uploadProfilePicture.single("profileImage"),
+  createDoctor,
+);
+
+router.get("/doctors", checkAuth, allowRoles("Hospital"), getHospitalDoctors);
+router.patch("/doctors/:doctorId/status", checkAuth, allowRoles("Hospital"), updateDoctorStatus);
+router.patch("/doctors/:doctorId/schedule", checkAuth, allowRoles("Hospital"), updateDoctorSchedule);
+router.patch("/doctors/:doctorId", checkAuth, allowRoles("Hospital"), uploadProfilePicture.single("profileImage"), updateDoctor);
 
 router.get("/public/:hospitalId", checkAuth, getPublicHospitalById);
 

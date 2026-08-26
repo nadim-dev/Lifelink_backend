@@ -3,6 +3,12 @@ import { donorSchema, updateDonorSchema } from "../validators/donorValidator.js"
 import User from "../models/userModel.js";
 import { createDonorProfile } from "../services/donorService.js";
 import Donor from "../models/donorModel.js";
+import { getRouteDistanceInMeters } from "../utils/geoapifyDistance.js";
+import Notification from "../models/notificationModel.js";
+import DonorContact from "../models/donorContactModel.js";
+import axios from "axios";
+
+const DONOR_CONTACT_COOLDOWN_MS = 12 * 60 * 60 * 1000;
 
 const getAddressFromCoordinates = async ({ latitude, longitude }) => {
   const response = await fetch(
@@ -334,3 +340,190 @@ export const suspendUser = async (req, res) => {
     });
   }
 };
+
+export const getNearbyDonors = async (req, res) => {
+  try {
+    const bloodGroup = String(req.query.bloodGroup || "").trim();
+    const radiusKm = Math.min(Math.max(Number(req.query.radius) || 10, 1), 50);
+
+    const currentUser = await User.findById(req.user._id).select("location").lean();
+    const coordinates = currentUser?.location?.coordinates;
+   
+    if (!bloodGroup) return res.status(400).json({ message: "Blood group is required" });
+    if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+      return res.status(400).json({ message: "Please update your location before searching for donors" });
+    }
+
+    const donors = await Donor.find({
+      bloodGroup,
+      availability: { $ne: "unavailable" },
+      eligibilityConfirmed: true,
+    })
+      .populate({
+        path: "userId",
+        select: "username phoneNumber picture location accountStatus isDonor gender dateOfBirth",
+        match: { accountStatus: "active","location.coordinates": { $exists: true } },
+      })
+      .lean();
+
+    const nearbyDonors = (await Promise.all(donors
+      .filter((donor) => donor.userId)
+      .map(async (donor) => {
+        const [toLongitude, toLatitude] = donor.userId.location.coordinates;
+        const distanceMeters = await getRouteDistanceInMeters({
+          fromLatitude: coordinates[1],
+          fromLongitude: coordinates[0],
+          toLatitude,
+          toLongitude,
+        });
+        if (distanceMeters === null) return null;
+        const distance = distanceMeters / 1000;
+        console.log("distance",distance);        
+        const lastContact = await DonorContact.findOne({
+          requesterId: req.user._id,
+          donorId: donor._id,
+        }).sort({ createdAt: -1 }).select("createdAt").lean();
+        const contactedUntil = lastContact
+          ? new Date(new Date(lastContact.createdAt).getTime() + DONOR_CONTACT_COOLDOWN_MS)
+          : null;
+
+        return {
+          _id: donor._id,
+          fullName: donor.userId.username,
+          bloodGroup: donor.bloodGroup,
+          phoneNumber:donor.userId.phoneNumber,
+          gender: donor.userId.gender,
+          age: donor.userId.dateOfBirth
+            ? Math.max(0, Math.floor((Date.now() - new Date(donor.userId.dateOfBirth).getTime()) / 31557600000))
+            : null,
+          picture: donor.userId.picture,
+          distance: Number(distance.toFixed(1)),
+          preferredDistance: donor.preferredDistance,
+          availability: donor.availability,
+          lastDonationDate: donor.lastDonationDate,
+          contactedUntil: contactedUntil && contactedUntil > new Date()
+            ? contactedUntil
+            : null,
+        };
+      })))
+      .filter(Boolean)
+      // A donor must be within both the patient's selected radius and
+      // the maximum distance that donor has agreed to travel.
+      .filter(
+        (donor) =>
+          donor.distance <= radiusKm &&
+          donor.preferredDistance >= donor.distance,
+      )
+      .sort((first, second) => first.distance - second.distance);
+
+    return res.status(200).json({ donors: nearbyDonors });
+  } catch (error) {
+    console.error("Nearby donors error:", error);
+    return res.status(500).json({ message: "Unable to load nearby donors" });
+  }
+};
+
+export const sendWhatsAppSms=async (req,res)=>{
+  console.log("send whatsapp sms function is running");
+  const {donorId}=req.params;
+  console.log("donorId",donorId);
+  const {distance}=req.body;
+  const requester=await User.findById(req.user._id).lean().select("username phoneNumber short_address")
+  try{
+  const donor= await Donor.findById(donorId).populate("userId");
+  console.log("donor",donor);
+  if(!donor)
+    return res.status(404).json({"messages":"donor dosen't exist"});
+
+  if (!donor.userId) {
+    return res.status(404).json({ message: "Donor user account not found" });
+  }
+
+  const lastContact = await DonorContact.findOne({
+    requesterId: req.user._id,
+    donorId,
+  }).sort({ createdAt: -1 }).select("createdAt").lean();
+  
+  const contactedUntil = lastContact
+    ? new Date(new Date(lastContact.createdAt).getTime() + DONOR_CONTACT_COOLDOWN_MS)
+    : null;
+
+  if (contactedUntil && contactedUntil > new Date()) {
+    return res.status(429).json({
+      message: "You already contacted this donor recently.",
+      contactedUntil,
+    });
+  }
+
+   const body= `🩸 *New Blood Donation Request*
+
+Hello ${donor.userId.username},
+
+A blood donation request has been made for a patient requiring *${donor.bloodGroup} blood*.
+
+*Request Details:*
+👤 Requester: ${requester.username}
+🏥 Location: ${requester.short_address}
+📍 Distance: Approximately ${distance} km away
+🚨 Priority: Urgent
+
+📞 *Contact Number:* ${requester.phoneNumber}
+
+If you are available and willing to donate, please contact the requester directly.
+
+Thank you for supporting someone in need.
+
+— *Lifelink*`
+
+
+  const response = await axios.post(
+      "https://restapi.geniusdevel.com/api/send",
+
+      {
+        sessionId: process.env.GENIUS_SESSION_ID,
+        number: `91${donor.userId.phoneNumber}`,
+        type: "text",
+        message: body,
+        source: "API",
+      },
+
+      {
+        headers: {
+          "x-api-key": process.env.GENIUS_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+);
+
+  await DonorContact.create({
+    requesterId: req.user._id,
+    donorId,
+  });
+
+  console.log("response",response);
+ 
+
+  const notification = await Notification.create({
+    userId: donor.userId._id,
+    title: "New Blood Request",
+    message: `${requester.username} is requesting ${donor.bloodGroup} blood approximately ${distance} km away.
+    Contact: ${requester.phoneNumber}`,
+    type: "Blood Request",
+    actionUrl: "/notifications",
+  });
+
+  const io = req.app.get("io");
+  io.to(`user:${donor.userId._id}`).emit("newNotification", notification);
+
+
+  return res.status(200).json({"message":"sms send succesfully"});
+  }catch(err){
+    console.log(err.message);
+    console.log(err);
+    return res.status(err.status || 500).json({
+      message: err.message || "Unable to send WhatsApp message",
+      code: err.code,
+    });
+  }
+
+}

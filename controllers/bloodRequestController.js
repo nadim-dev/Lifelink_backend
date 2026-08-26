@@ -386,6 +386,15 @@ export const approveIncomingBloodBankRequest = async (req, res) => {
       .populate("userId", "username email phoneNumber picture")
       .lean();
 
+    const io = req.app.get("io");
+    if (io && updatedRequest?.userId?._id) {
+      io.to(`user:${updatedRequest.userId._id}`).emit("bloodRequestStatusUpdated", {
+        requestId: updatedRequest._id,
+        requestStatus: updatedRequest.requestStatus,
+        bloodRequest: updatedRequest,
+      });
+    }
+
     return res.status(200).json({
       message: "Blood request approved successfully.",
       bloodRequest: updatedRequest,

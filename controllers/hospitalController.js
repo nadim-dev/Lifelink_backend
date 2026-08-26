@@ -1,30 +1,12 @@
 import Hospital from "../models/HospitalModel.js";
+import Doctor from "../models/doctorModel.js";
 import Notification from "../models/notificationModel.js";
 import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
+import { getRouteDistanceInMeters } from "../utils/geoapifyDistance.js";
 
 const hospitalSelect = "-password";
-
-const getRouteDistanceInMeters = async ({ fromLatitude, fromLongitude, toLatitude, toLongitude }) => {
-  if (!process.env.GEOAPIFY_API_KEY) return null;
-
-  const url = new URL("https://api.geoapify.com/v1/routing");
-  url.searchParams.set("waypoints", `${fromLatitude},${fromLongitude}|${toLatitude},${toLongitude}`);
-  url.searchParams.set("mode", "drive");
-  url.searchParams.set("apiKey", process.env.GEOAPIFY_API_KEY);
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error("Geoapify route distance request failed");
-  }
-
-  const data = await response.json();
-  const distance = Number(data?.features?.[0]?.properties?.distance);
-
-  return Number.isFinite(distance) ? distance : null;
-};
 
 export const getHospitalStats = async (req, res) => {
   try {
@@ -268,6 +250,121 @@ export const registerHospital = async (req, res) => {
 
     return res.status(500).json({ message: "Unable to register hospital" });
   }
+};
+
+export const createDoctor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id") : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+
+    const { name, email, phoneNumber, gender, dateOfBirth, department, specialization, experience, registrationNumber, consultationFee, appointmentDuration, status } = req.body;
+    let { qualifications } = req.body;
+    try {
+      qualifications = qualifications ? JSON.parse(qualifications) : [];
+    } catch {
+      qualifications = String(qualifications || "").split(",").map((item) => item.trim()).filter(Boolean);
+    }
+    if (Array.isArray(qualifications) && qualifications.length === 1 && typeof qualifications[0] === "string" && qualifications[0].trim().startsWith("[")) {
+      try {
+        const nestedQualifications = JSON.parse(qualifications[0]);
+        if (Array.isArray(nestedQualifications)) qualifications = nestedQualifications;
+      } catch {
+        // Keep the original value when it is not valid nested JSON.
+      }
+    }
+    let availability = req.body.availability;
+    try {
+      availability = availability ? JSON.parse(availability) : [];
+    } catch {
+      availability = [];
+    }
+    const uploadResult = req.file
+      ? await uploadBufferToCloudinary(req.file.buffer, {
+          folder: "mediverse/doctor-profile-pictures",
+          resource_type: "image",
+        })
+      : null;
+    const doctor = await Doctor.create({
+      hospitalId: hospital._id, name, profileImage: uploadResult?.secure_url || null, email, phoneNumber, gender, dateOfBirth: dateOfBirth || undefined, department, specialization,
+      qualifications: Array.isArray(qualifications) ? qualifications : [],
+      experience: Number(experience), registrationNumber, consultationFee: Number(consultationFee || 0),
+      appointmentDuration: Number(appointmentDuration || 30), availability: Array.isArray(availability) ? availability : [], status: status || "active",
+    });
+    return res.status(201).json({ message: "Doctor added successfully", doctor });
+  } catch (error) {
+    console.error("Create doctor error:", error);
+    return res.status(400).json({ message: error.message || "Unable to add doctor" });
+  }
+};
+
+export const getHospitalDoctors = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+
+    const doctors = await Doctor.find({ hospitalId: hospital._id }).sort({ createdAt: -1 }).lean();
+    return res.status(200).json({ doctors });
+  } catch (error) {
+    console.error("Get hospital doctors error:", error);
+    return res.status(500).json({ message: "Unable to load doctors" });
+  }
+};
+
+export const updateDoctorStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+
+    const nextStatus = req.body.status === "active" ? "active" : "inactive";
+    const doctor = await Doctor.findOneAndUpdate(
+      { _id: req.params.doctorId, hospitalId: hospital._id },
+      { status: nextStatus },
+      { new: true, runValidators: true },
+    ).lean();
+
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    return res.status(200).json({ message: `Doctor ${nextStatus === "active" ? "activated" : "deactivated"} successfully`, doctor });
+  } catch (error) {
+    console.error("Deactivate doctor error:", error);
+    return res.status(500).json({ message: "Unable to deactivate doctor" });
+  }
+};
+
+export const updateDoctorSchedule = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    const schedule = Array.isArray(req.body.availability) ? req.body.availability : JSON.parse(req.body.availability || "[]");
+    const doctor = await Doctor.findOneAndUpdate({ _id: req.params.doctorId, hospitalId: hospital?._id }, { availability: schedule }, { new: true, runValidators: true }).lean();
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    return res.status(200).json({ message: "Doctor schedule updated successfully", doctor });
+  } catch (error) {
+    console.error("Update doctor schedule error:", error);
+    return res.status(400).json({ message: error.message || "Unable to update doctor schedule" });
+  }
+};
+
+export const updateDoctor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    let { qualifications, availability } = req.body;
+    try { qualifications = JSON.parse(qualifications || "[]"); } catch { qualifications = String(qualifications || "").split(",").map((item) => item.trim()).filter(Boolean); }
+    try { availability = JSON.parse(availability || "[]"); } catch { availability = []; }
+    const updates = { ...req.body, qualifications, availability, experience: Number(req.body.experience), consultationFee: Number(req.body.consultationFee || 0), appointmentDuration: Number(req.body.appointmentDuration || 30) };
+    delete updates.profileImage;
+    if (req.file) {
+      const uploadResult = await uploadBufferToCloudinary(req.file.buffer, { folder: "mediverse/doctor-profile-pictures", resource_type: "image" });
+      updates.profileImage = uploadResult.secure_url;
+    }
+    const doctor = await Doctor.findOneAndUpdate({ _id: req.params.doctorId, hospitalId: hospital._id }, updates, { new: true, runValidators: true }).lean();
+    if (!doctor) return res.status(404).json({ message: "Doctor not found" });
+    return res.status(200).json({ message: "Doctor updated successfully", doctor });
+  } catch (error) { console.error("Update doctor error:", error); return res.status(400).json({ message: error.message || "Unable to update doctor" }); }
 };
 
 export const getNearbyHospitals = async (req, res) => {

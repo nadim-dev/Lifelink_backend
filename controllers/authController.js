@@ -325,6 +325,10 @@ export const loginWithGoogle = async (req, res) => {
 
       }
 
+
+      if (user.role == "User" && user.accountStatus == "suspended")
+         return res.status(403).json({message: "Your account is suspended by admin."});
+
       const sessionId = crypto.randomUUID();
       const sessionExpiryTime = 7 * 24 * 60 * 60;
       const rediskey = `session:${sessionId}`;
