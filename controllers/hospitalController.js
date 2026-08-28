@@ -1,5 +1,6 @@
 import Hospital from "../models/HospitalModel.js";
 import Doctor from "../models/doctorModel.js";
+import ServiceFacility from "../models/serviceFacilityModel.js";
 import Notification from "../models/notificationModel.js";
 import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
@@ -7,6 +8,38 @@ import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
 import { getRouteDistanceInMeters } from "../utils/geoapifyDistance.js";
 
 const hospitalSelect = "-password";
+
+export const getMyHospitalProfile = async (req, res) => {
+  try {
+    const hospital = await Hospital.findOne({
+      $or: [
+        { userId: req.user._id },
+        { userId: { $exists: false }, email: req.user.email },
+      ],
+    }).select(hospitalSelect).lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    hospital.contactPerson = {
+      ...(hospital.contactPerson || {}),
+      name: hospital.contactPerson?.name || req.user.username || "",
+      phoneNumber: hospital.contactPerson?.phoneNumber || hospital.phoneNumber || req.user.phoneNumber || "",
+    };
+    return res.status(200).json({ hospital });
+  } catch { 
+    return res.status(500).json({ message: "Unable to load hospital profile" }); 
+  }
+};
+
+export const updateMyHospitalProfile = async (req, res) => {
+  try {
+    const { openingTime, closingTime, isOpen24Hours, contactPersonName, phoneNumber } = sanitize(req.body);
+    const alwaysOpen = isOpen24Hours === true || isOpen24Hours === "true";
+    if (!contactPersonName || !phoneNumber) return res.status(400).json({ message: "Contact person and phone number are required" });
+    if (!alwaysOpen && (!openingTime || !closingTime)) return res.status(400).json({ message: "Opening and closing time are required" });
+    const hospital = await Hospital.findOneAndUpdate({ $or: [{ userId: req.user._id }, { userId: { $exists: false }, email: req.user.email }] }, { $set: { userId: req.user._id, phoneNumber, "contactPerson.name": contactPersonName, "contactPerson.phoneNumber": phoneNumber, workingHours: { openingTime: alwaysOpen ? "" : openingTime, closingTime: alwaysOpen ? "" : closingTime, isOpen24Hours: alwaysOpen } } }, { new: true, runValidators: true }).select(hospitalSelect).lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    return res.json({ hospital, message: "Hospital profile updated successfully" });
+  } catch { return res.status(500).json({ message: "Unable to update hospital profile" }); }
+};
 
 export const getHospitalStats = async (req, res) => {
   try {
@@ -35,6 +68,7 @@ export const getHospitalStats = async (req, res) => {
 
 export const getHospitals = async (req, res) => {
   try {
+
     const hospitals = await Hospital.find()
       .select(hospitalSelect)
       .sort({ createdAt: -1 })
@@ -184,6 +218,7 @@ export const registerHospital = async (req, res) => {
     });
 
     const hospital = await Hospital.create({
+      userId: createdUser._id,
       email,
       password: createdUser.password,
       name,
@@ -365,6 +400,52 @@ export const updateDoctor = async (req, res) => {
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
     return res.status(200).json({ message: "Doctor updated successfully", doctor });
   } catch (error) { console.error("Update doctor error:", error); return res.status(400).json({ message: error.message || "Unable to update doctor" }); }
+};
+
+export const createServiceFacility = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    const { name, type, department, description, status } = req.body;
+    if (!name || !type || !description) return res.status(400).json({ message: "Name, type and description are required" });
+    const upload = req.file ? await uploadBufferToCloudinary(req.file.buffer, { folder: "mediverse/service-facilities", resource_type: "image" }) : null;
+    const item = await ServiceFacility.create({ hospitalId: hospital._id, name, type, department, description, status: status === "inactive" ? "inactive" : "active", imageUrl: upload?.secure_url || null });
+    return res.status(201).json({ message: "Service/facility added successfully", item });
+  } catch (error) { console.error("Create service facility error:", error); return res.status(400).json({ message: error.message || "Unable to add service/facility" }); }
+};
+
+export const getHospitalServicesFacilities = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    const items = await ServiceFacility.find({ hospitalId: hospital._id }).sort({ createdAt: -1 }).lean();
+    return res.status(200).json({ items });
+  } catch (error) {
+    console.error("Get services facilities error:", error);
+    return res.status(500).json({ message: "Unable to load services and facilities" });
+  }
+};
+
+export const updateServiceFacility = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email").lean();
+    const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+    const updates = { name: req.body.name, type: req.body.type, description: req.body.description, status: req.body.status === "inactive" ? "inactive" : "active" };
+    if (req.file) { const upload = await uploadBufferToCloudinary(req.file.buffer, { folder: "mediverse/service-facilities", resource_type: "image" }); updates.imageUrl = upload.secure_url; }
+    const item = await ServiceFacility.findOneAndUpdate({ _id: req.params.itemId, hospitalId: hospital?._id }, updates, { new: true, runValidators: true }).lean();
+    if (!item) return res.status(404).json({ message: "Service or facility not found" });
+    return res.json({ item });
+  } catch (error) { return res.status(400).json({ message: error.message || "Unable to update service/facility" }); }
+};
+
+export const deleteServiceFacility = async (req, res) => {
+  const user = await User.findById(req.user._id).select("email").lean();
+  const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
+  const item = await ServiceFacility.findOneAndDelete({ _id: req.params.itemId, hospitalId: hospital?._id });
+  if (!item) return res.status(404).json({ message: "Service or facility not found" });
+  return res.json({ message: "Deleted successfully" });
 };
 
 export const getNearbyHospitals = async (req, res) => {

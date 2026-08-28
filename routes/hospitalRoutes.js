@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor } from "../controllers/hospitalController.js";
+import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor, createServiceFacility, getHospitalServicesFacilities, updateServiceFacility, deleteServiceFacility, getMyHospitalProfile, updateMyHospitalProfile } from "../controllers/hospitalController.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadHospitalRegistrationDocument } from "../middleware/hospitalUpload.js";
 import { uploadProfilePicture } from "../middleware/profilePictureUpload.js";
@@ -8,6 +8,8 @@ import { uploadProfilePicture } from "../middleware/profilePictureUpload.js";
 const router = express.Router();
 
 router.get("/nearby",checkAuth,getNearbyHospitals);
+router.get("/me/profile", checkAuth, allowRoles("Hospital"), getMyHospitalProfile);
+router.patch("/me/profile/details", checkAuth, allowRoles("Hospital"), updateMyHospitalProfile);
 
 router.post(
   "/doctors",
@@ -21,6 +23,10 @@ router.get("/doctors", checkAuth, allowRoles("Hospital"), getHospitalDoctors);
 router.patch("/doctors/:doctorId/status", checkAuth, allowRoles("Hospital"), updateDoctorStatus);
 router.patch("/doctors/:doctorId/schedule", checkAuth, allowRoles("Hospital"), updateDoctorSchedule);
 router.patch("/doctors/:doctorId", checkAuth, allowRoles("Hospital"), uploadProfilePicture.single("profileImage"), updateDoctor);
+router.post("/services-facilities", checkAuth, allowRoles("Hospital"), uploadProfilePicture.single("image"), createServiceFacility);
+router.get("/services-facilities", checkAuth, allowRoles("Hospital"), getHospitalServicesFacilities);
+router.patch("/services-facilities/:itemId", checkAuth, allowRoles("Hospital"), uploadProfilePicture.single("image"), updateServiceFacility);
+router.delete("/services-facilities/:itemId", checkAuth, allowRoles("Hospital"), deleteServiceFacility);
 
 router.get("/public/:hospitalId", checkAuth, getPublicHospitalById);
 

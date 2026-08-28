@@ -3,6 +3,12 @@ import { Schema, model } from "mongoose";
 const hospitalSchema = new Schema(
   {
     // Account Details
+    userId: { 
+      type: Schema.Types.ObjectId, 
+      ref: "User", required: true, 
+      unique: true, 
+      index: true 
+    },
     email: {
       type: String,
       required: true,
@@ -47,6 +53,12 @@ const hospitalSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+    },
+
+    workingHours: {
+      openingTime: { type: String, default: "10:00" },
+      closingTime: { type: String, default: "22:00" },
+      isOpen24Hours: { type: Boolean, default: false },
     },
 
     // Hospital Address
