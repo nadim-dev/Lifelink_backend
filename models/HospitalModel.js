@@ -151,6 +151,7 @@ const hospitalSchema = new Schema(
 hospitalSchema.index({
   location: "2dsphere",
 });
+hospitalSchema.index({ accountStatus: 1 });
 
 const Hospital = model("Hospital", hospitalSchema);
 

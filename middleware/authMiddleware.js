@@ -1,5 +1,5 @@
 import redisClient from "../config/redis.js";
-import User from "../models/userModel.js";
+
 
 export default async function checkAuth(req,res,next){
 

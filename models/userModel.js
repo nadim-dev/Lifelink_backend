@@ -107,6 +107,8 @@ passwordResetExpires: {
 });
 
 userSchema.index({ location: "2dsphere" });
+userSchema.index({ role: 1, accountStatus: 1 });
+userSchema.index({ role: 1, isDonor: 1 });
 
 userSchema.pre("save",async function (){
   //* if password is not modified, skip hashing

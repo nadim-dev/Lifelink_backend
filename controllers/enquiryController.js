@@ -5,6 +5,15 @@ import { enquirySchema } from "../validators/enquiryValidator.js";
 import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
 
+export const getEnquiryStats = async (req, res) => {
+  const [newEnquiries, thisWeek, thisMonth] = await Promise.all([
+    Enquiry.countDocuments({ isReplied: false }),
+    Enquiry.countDocuments({ createdAt: { $gte: new Date(Date.now() - 7 * 86400000) } }),
+    Enquiry.countDocuments({ createdAt: { $gte: new Date(new Date().setDate(1)) } }),
+  ]);
+  return res.json({ stats: { newEnquiries, thisWeek, thisMonth } });
+};
+
 
 export const createEnquiry = async (req, res) => {
   try {

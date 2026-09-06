@@ -123,6 +123,7 @@ const deliveryPartnerSchema = new Schema(
 deliveryPartnerSchema.index({
   currentLocation: "2dsphere",
 });
+deliveryPartnerSchema.index({ accountStatus: 1 });
 
 const DeliveryPartner = model(
   "DeliveryPartner",

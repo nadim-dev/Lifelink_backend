@@ -6,6 +6,11 @@ import { supportTicketSchema } from "../validators/supportTicketValidator.js";
 import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
 
+export const getSupportTicketStats = async (req, res) => {
+  const stats = await SupportTicket.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]);
+  return res.json({ stats: Object.fromEntries(stats.map((item) => [item._id, item.count])) });
+};
+
 const createTicketId = async () => {
   const counter = await Counter.findOneAndUpdate(
     { name: "support-ticket" },

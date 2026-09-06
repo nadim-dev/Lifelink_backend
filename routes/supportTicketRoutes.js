@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import {addAdminTicketMessage,addTicketMessage,createSupportTicket,getAllSupportTicketsForAdmin,getMySupportTickets,getSupportTicketForAdmin,getTicketById,updateTicketStatusForAdmin} from "../controllers/supportTicketController.js";
+import {addAdminTicketMessage,addTicketMessage,createSupportTicket,getAllSupportTicketsForAdmin,getMySupportTickets,getSupportTicketForAdmin,getTicketById,updateTicketStatusForAdmin,getSupportTicketStats} from "../controllers/supportTicketController.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadSupportTicketScreenshot } from "../middleware/supportTicketUpload.js";
 
@@ -11,6 +11,7 @@ router.post("/",checkAuth,uploadSupportTicketScreenshot.single("screenshot"),cre
 router.get("/mine", checkAuth, getMySupportTickets);
 
 router.get("/admin/all", checkAuth, allowRoles("Admin"), getAllSupportTicketsForAdmin);
+router.get("/admin/stats", checkAuth, allowRoles("Admin"), getSupportTicketStats);
 
 router.get("/admin/:ticketId", checkAuth, allowRoles("Admin"), getSupportTicketForAdmin);
 

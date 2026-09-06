@@ -72,10 +72,7 @@ export const loginUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "user dosen't exist" });
     }
-
-    if (!user.password) {
-      return res.status(400).json({ message: "Please set a password from your profile before using email login" });
-    }
+    
 
  if (["BloodBank", "DeliveryPartner","Hospital"].includes(user.role) &&
   user.accountStatus !== "active"
