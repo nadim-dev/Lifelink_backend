@@ -6,12 +6,12 @@ import User from "../models/userModel.js";
 import Notification from "../models/notificationModel.js";
 
 export const getEnquiryStats = async (req, res) => {
-  const [newEnquiries, thisWeek, thisMonth] = await Promise.all([
+  const [notReplied, replied, total] = await Promise.all([
     Enquiry.countDocuments({ isReplied: false }),
-    Enquiry.countDocuments({ createdAt: { $gte: new Date(Date.now() - 7 * 86400000) } }),
-    Enquiry.countDocuments({ createdAt: { $gte: new Date(new Date().setDate(1)) } }),
+    Enquiry.countDocuments({ isReplied: true }),
+    Enquiry.countDocuments(),
   ]);
-  return res.json({ stats: { newEnquiries, thisWeek, thisMonth } });
+  return res.json({ stats: { total, replied, notReplied } });
 };
 
 
