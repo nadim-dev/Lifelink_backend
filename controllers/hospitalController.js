@@ -407,10 +407,10 @@ export const createServiceFacility = async (req, res) => {
     const user = await User.findById(req.user._id).select("email").lean();
     const hospital = user ? await Hospital.findOne({ email: user.email }).select("_id").lean() : null;
     if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
-    const { name, type, department, description, status } = req.body;
-    if (!name || !type || !description) return res.status(400).json({ message: "Name, type and description are required" });
+    const { name, type, description, status } = req.body;
+    if (!name || !type ) return res.status(400).json({ message: "Name, type and description are required" });
     const upload = req.file ? await uploadBufferToCloudinary(req.file.buffer, { folder: "mediverse/service-facilities", resource_type: "image" }) : null;
-    const item = await ServiceFacility.create({ hospitalId: hospital._id, name, type, department, description, status: status === "inactive" ? "inactive" : "active", imageUrl: upload?.secure_url || null });
+    const item = await ServiceFacility.create({ hospitalId: hospital._id, name, type, description, status: status === "inactive" ? "inactive" : "active", imageUrl: upload?.secure_url || null });
     return res.status(201).json({ message: "Service/facility added successfully", item });
   } catch (error) { console.error("Create service facility error:", error); return res.status(400).json({ message: error.message || "Unable to add service/facility" }); }
 };

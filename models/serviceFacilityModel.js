@@ -10,7 +10,6 @@ const serviceFacilitySchema = new mongoose.Schema(
     },
     name: { type: String, required: true, trim: true },
     type: { type: String, enum: ["Service", "Facility"], required: true },
-    department: { type: String, trim: true, default: "" },
     description: { type: String, required: true, trim: true },
     imageUrl: { type: String, default: null },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
