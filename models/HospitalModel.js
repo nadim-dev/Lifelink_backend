@@ -135,6 +135,31 @@ const hospitalSchema = new Schema(
       default: "pending",
     },
 
+    capacity: {
+       beds: {
+         general: {
+           total: Number,
+           occupied: Number
+         },
+     
+         private: {
+           total: Number,
+           occupied: Number
+         },
+     
+         icu: {
+           total: Number,
+           occupied: Number
+         }
+       },
+     
+       emergencyStatus: {
+         type: String,
+         enum: ["available", "limited", "unavailable"],
+         default: "available"
+       }
+    },
+
     // Account Status
     accountStatus: {
       type: String,
