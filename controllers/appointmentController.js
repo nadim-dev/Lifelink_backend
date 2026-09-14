@@ -376,6 +376,20 @@ export const GetMyAppointments = async (req, res) => {
   }
 };
 
+export const GetMyAppointmentHistory = async (req, res) => {
+  try {
+    const appointments = await Appointment.find({ patientId: req.user._id })
+      .populate("doctorId", "name specialization department")
+      .populate("hospitalId", "name address")
+      .sort({ appointmentStart: -1 })
+      .lean();
+    return res.status(200).json({ appointments });
+  } catch (error) {
+    console.error("Get appointment history error:", error);
+    return res.status(500).json({ message: "Unable to load appointment history" });
+  }
+};
+
 export const GetHospitalAppointments = async (req, res) => {
   try {
     const hospital = await Hospital.findOne({ userId: req.user._id }).select("_id").lean();

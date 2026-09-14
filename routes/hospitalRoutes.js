@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, getPublicHospitalDoctors, getPublicHospitalServicesFacilities, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor, createServiceFacility, getHospitalServicesFacilities, updateServiceFacility, deleteServiceFacility, getMyHospitalProfile, updateMyHospitalProfile, updateMyEmergencyStatus, updateMyCapacityBed } from "../controllers/hospitalController.js";
+import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, getPublicHospitalDoctors, getPublicHospitalServicesFacilities, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor, createServiceFacility, getHospitalServicesFacilities, updateServiceFacility, deleteServiceFacility, getMyHospitalProfile, getMyHospitalDashboardSummary, updateMyHospitalProfile, updateMyEmergencyStatus, updateMyCapacityBed } from "../controllers/hospitalController.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadHospitalRegistrationDocument } from "../middleware/hospitalUpload.js";
 import { uploadProfilePicture } from "../middleware/profilePictureUpload.js";
@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.get("/nearby",checkAuth,getNearbyHospitals);
 router.get("/me/profile", checkAuth, allowRoles("Hospital"), getMyHospitalProfile);
+router.get("/me/dashboard-summary", checkAuth, allowRoles("Hospital"), getMyHospitalDashboardSummary);
 router.patch("/me/profile/details", checkAuth, allowRoles("Hospital"), updateMyHospitalProfile);
 router.patch("/me/capacity/emergency-status", checkAuth, allowRoles("Hospital"), updateMyEmergencyStatus);
 router.patch("/me/capacity/bed", checkAuth, allowRoles("Hospital"), updateMyCapacityBed);

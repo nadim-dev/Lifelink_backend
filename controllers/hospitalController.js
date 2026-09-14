@@ -6,8 +6,27 @@ import User from "../models/userModel.js";
 import { sanitize } from "../utils/sanitize.js";
 import { uploadBufferToCloudinary } from "../utils/uploadToCloudinary.js";
 import { getRouteDistanceInMeters } from "../utils/geoapifyDistance.js";
+import { Appointment } from "../models/appointmentModel.js";
 
 const hospitalSelect = "-password";
+
+export const getMyHospitalDashboardSummary = async (req, res) => {
+  try {
+    const hospital = await Hospital.findOne({ userId: req.user._id }).select("capacity").lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital profile not found" });
+    const doctors = await Doctor.find({ hospitalId: hospital._id }).select("_id status").lean();
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end = new Date(start); end.setDate(end.getDate() + 1);
+    const appointmentsToday = await Appointment.countDocuments({ doctorId: { $in: doctors.map((doctor) => doctor._id) }, appointmentStart: { $gte: start, $lt: end } });
+    const beds = hospital.capacity?.beds || {};
+    const totalBeds = [beds.general, beds.private, beds.icu].reduce((sum, bed) => sum + Number(bed?.total || 0), 0);
+    const occupiedBeds = [beds.general, beds.private, beds.icu].reduce((sum, bed) => sum + Number(bed?.occupied || 0), 0);
+    return res.json({ summary: { appointmentsToday, activeDoctors: doctors.filter((doctor) => doctor.status === "active").length, availableBeds: Math.max(totalBeds - occupiedBeds, 0), totalBeds, emergencyStatus: hospital.capacity?.emergencyStatus || "unavailable" } });
+  } catch (error) {
+    console.error("Hospital dashboard summary error:", error);
+    return res.status(500).json({ message: "Unable to load dashboard summary" });
+  }
+};
 
 export const getMyHospitalProfile = async (req, res) => {
   try {
