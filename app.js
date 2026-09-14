@@ -17,6 +17,8 @@ import redisClient from "./config/redis.js";
 import deliveryRoutes from "./routes/deliveryRoutes.js";
 import bloodRequestRoutes from "./routes/bloodRequestRoutes.js"
 import adminRoutes from "./routes/adminRoutes.js";
+import appointmentRoutes from "./routes/appointmentRoutes.js";
+
 try{
 await connectDB();
 const app=express();
@@ -44,12 +46,6 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-
-
-
-
-
-
 app.use(cookieParser(mySecretKey));
 
 app.use("/api/auth", authRoutes);
@@ -64,6 +60,7 @@ app.use("/api/hospitals", hospitalRoutes);
 app.use("/api/delivery-requests",deliveryRoutes);
 app.use("/api/blood-requests", bloodRequestRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/appointments",appointmentRoutes);
 io.use(async (socket, next) => {
   try {
     cookieParser(mySecretKey)(socket.request, {}, async (err) => {

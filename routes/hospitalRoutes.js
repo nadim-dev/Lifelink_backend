@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor, createServiceFacility, getHospitalServicesFacilities, updateServiceFacility, deleteServiceFacility, getMyHospitalProfile, updateMyHospitalProfile, updateMyEmergencyStatus, updateMyCapacityBed } from "../controllers/hospitalController.js";
+import { createDoctor, getHospitalById, getHospitalStats, getHospitals,getNearbyHospitals, getPublicHospitalById, getPublicHospitalDoctors, getPublicHospitalServicesFacilities, registerHospital, updateHospitalStatus, getHospitalDoctors, updateDoctorStatus, updateDoctorSchedule, updateDoctor, createServiceFacility, getHospitalServicesFacilities, updateServiceFacility, deleteServiceFacility, getMyHospitalProfile, updateMyHospitalProfile, updateMyEmergencyStatus, updateMyCapacityBed } from "../controllers/hospitalController.js";
 import checkAuth, { allowRoles } from "../middleware/authMiddleware.js";
 import { uploadHospitalRegistrationDocument } from "../middleware/hospitalUpload.js";
 import { uploadProfilePicture } from "../middleware/profilePictureUpload.js";
@@ -31,6 +31,8 @@ router.patch("/services-facilities/:itemId", checkAuth, allowRoles("Hospital"), 
 router.delete("/services-facilities/:itemId", checkAuth, allowRoles("Hospital"), deleteServiceFacility);
 
 router.get("/public/:hospitalId", checkAuth, getPublicHospitalById);
+router.get("/public/:hospitalId/doctors", checkAuth, getPublicHospitalDoctors);
+router.get("/public/:hospitalId/services-facilities", checkAuth, getPublicHospitalServicesFacilities);
 
 router.get("/stats", checkAuth, allowRoles("Admin"), getHospitalStats);
 

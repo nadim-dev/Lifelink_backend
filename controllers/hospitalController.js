@@ -93,17 +93,20 @@ export const updateMyHospitalProfile = async (req, res) => {
 
 export const updateMyEmergencyStatus = async (req, res) => {
   try {
+    console.log("Update my emergency status is running");
+    
     const cleanBody = sanitize(req.body || {});
     const emergencyStatus = String(cleanBody.emergencyStatus || "").trim().toLowerCase();
-    if (!["available", "limited", "unavailable"].includes(emergencyStatus))
-      return res.status(400).json({ message: "Invalid emergency status" });
+
+    console.log("user ka id",req.user._id);
+
     const hospital = await Hospital.findOneAndUpdate(
-      { userId: req.user._id },
+          { userId: req.user._id },
+     
       { $set: { "capacity.emergencyStatus": emergencyStatus } },
-      { returnDocument: "after", runValidators: true },
-    )
-      .select(hospitalSelect)
-      .lean();
+      { returnDocument: "after", runValidators: true, upsert: false },
+    ).select(hospitalSelect).lean();
+
     if (!hospital)
       return res.status(404).json({ message: "Hospital profile not found" });
 
@@ -211,7 +214,7 @@ export const getPublicHospitalById = async (req, res) => {
       accountStatus: "approved",
     })
       .select(
-        "name hospitalType phoneNumber address location contactPerson accountStatus verificationStatus",
+        "name hospitalType phoneNumber address location contactPerson capacity workingHours accountStatus verificationStatus",
       )
       .lean();
 
@@ -223,6 +226,48 @@ export const getPublicHospitalById = async (req, res) => {
   } catch (error) {
     console.error("Public hospital details error:", error);
     return res.status(500).json({ message: "Unable to load hospital" });
+  }
+};
+
+export const getPublicHospitalDoctors = async (req, res) => {
+  try {
+    const hospital = await Hospital.findOne({
+      _id: req.params.hospitalId,
+      accountStatus: "approved",
+    }).select("_id").lean();
+
+    if (!hospital) {
+      return res.status(404).json({ message: "Hospital not found" });
+    }
+
+    const doctors = await Doctor.find({ hospitalId: hospital._id, status: "active" })
+      .select("name profileImage department specialization experience consultationFee availability status")
+      .sort({ name: 1 })
+      .lean();
+
+    return res.status(200).json({ doctors });
+  } catch (error) {
+    console.error("Public hospital doctors error:", error);
+    return res.status(500).json({ message: "Unable to load hospital doctors" });
+  }
+};
+
+export const getPublicHospitalServicesFacilities = async (req, res) => {
+  try {
+    const hospital = await Hospital.findOne({
+      _id: req.params.hospitalId,
+      accountStatus: "approved",
+    }).select("_id").lean();
+    if (!hospital) return res.status(404).json({ message: "Hospital not found" });
+
+    const items = await ServiceFacility.find({ hospitalId: hospital._id, status: "active" })
+      .select("name type description imageUrl status")
+      .sort({ type: 1, name: 1 })
+      .lean();
+    return res.status(200).json({ items });
+  } catch (error) {
+    console.error("Public hospital services/facilities error:", error);
+    return res.status(500).json({ message: "Unable to load hospital services and facilities" });
   }
 };
 

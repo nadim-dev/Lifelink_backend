@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "node    --no-deprecation  --env-file=.env  app.js"
+    "dev": "node    --no-deprecation  --env-file=.env  --watch app.js"
   },
   "dependencies": {
     "@ai-sdk/groq": "^4.0.29",
