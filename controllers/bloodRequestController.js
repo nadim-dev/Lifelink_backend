@@ -211,7 +211,13 @@ const requestNumber = `BIT-${String(counter.value).padStart(6, "0")}`;
 
 export const getMyBloodRequests = async (req, res) => {
   try {
-    const bloodRequests = await BloodRequest.find({ userId: req.user._id })
+    const query = { userId: req.user._id };
+    if (req.query.active === "true") {
+      query.requestStatus = { $nin: ["Completed", "Rejected", "Cancelled"] };
+      query.deliveryStatus = { $nin: ["Delivered"] };
+    }
+
+    const bloodRequests = await BloodRequest.find(query)
       .populate("bloodBankId", "bloodBankName phoneNumber address")
       .sort({ createdAt: -1 })
       .lean();

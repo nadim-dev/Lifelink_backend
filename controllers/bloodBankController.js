@@ -597,7 +597,6 @@ const COMPONENTS = [
 
 export const getAIDemandPrediction = async (req, res) => {
   try {
-    console.log("AI prediction component is running");
     const userId = req.user._id;
 
     const now = new Date();

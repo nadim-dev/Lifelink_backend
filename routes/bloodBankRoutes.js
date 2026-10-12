@@ -20,11 +20,11 @@ router.get("/requests/incoming", checkAuth, allowRoles("BloodBank"), getIncoming
 router.patch("/requests/incoming/:requestId/approve", checkAuth, allowRoles("BloodBank"), approveIncomingBloodBankRequest);
 router.patch("/requests/incoming/:requestId/ready-to-dispatch", checkAuth, allowRoles("BloodBank"), markIncomingBloodBankRequestReadyToDispatch);
 router.patch("/requests/incoming/:requestId/reject", checkAuth, allowRoles("BloodBank"), rejectIncomingBloodBankRequest);
-router.get("/requests/my", checkAuth, allowRoles("User"), getMyBloodRequests);
-router.get("/requests/my/:bloodRequestId/tracking", checkAuth, allowRoles("User"), getMyBloodRequestTracking);
-router.post("/requests/my/:bloodRequestId/delivery-otp", checkAuth, allowRoles("User"), generateDeliveryOtp);
-router.patch("/requests/:requestId/cancel", checkAuth, allowRoles("User"), cancelMyBloodRequest);
-router.post("/:bloodBankId/requests", checkAuth, allowRoles("User"), createBloodRequest);
+router.get("/requests/my", checkAuth, allowRoles("User", "Hospital"), getMyBloodRequests);
+router.get("/requests/my/:bloodRequestId/tracking", checkAuth, allowRoles("User", "Hospital"), getMyBloodRequestTracking);
+router.post("/requests/my/:bloodRequestId/delivery-otp", checkAuth, allowRoles("User", "Hospital"), generateDeliveryOtp);
+router.patch("/requests/:requestId/cancel", checkAuth, allowRoles("User", "Hospital"), cancelMyBloodRequest);
+router.post("/:bloodBankId/requests", checkAuth, allowRoles("User", "Hospital"), createBloodRequest);
 router.get("/demand-prediction", checkAuth, allowRoles("BloodBank"), getAIDemandPrediction);
 router.get("/:bloodBankId", checkAuth, allowRoles("Admin", "User"), getPublicBloodBank);
 router.post(
