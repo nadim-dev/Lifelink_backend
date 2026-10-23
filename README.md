@@ -1,8 +1,181 @@
 ﻿::: {align="center"}
 
-# ðŸ©º LifeLink
+# 🩺 LifeLink
 
-### 💊 7. Medicine Price Comparison`r`n`r`nMedicine price comparison is planned for a future release. LifeLink aims to make it easier for users to review medicine prices from multiple sources once this feature is developed and integrated.`r`n`r`n### ðŸ”” 8. Notifications & Support
+### AI-Powered Healthcare & Emergency Assistance System
+
+**Connecting patients, hospitals, doctors, blood banks, donors, and
+delivery partners --- when every moment matters.**
+
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Socket.IO](https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=white)
+:::
+
+---
+
+## 🌟 Overview
+
+**LifeLink** is a healthcare coordination platform designed to make
+essential healthcare services easier to discover and coordinate from one
+place. It goes beyond blood donation by bringing together **doctor
+appointments, hospital information, emergency capacity, blood requests,
+donor discovery, delivery coordination, and medicine price comparison**
+in a unified experience.
+
+During an emergency, people may need to contact multiple relatives to
+find a blood donor or visit several hospitals before discovering whether
+an appropriate facility is available. LifeLink aims to reduce this
+coordination burden by helping users find relevant services and follow
+requests through a more organized digital workflow.
+
+The platform provides separate experiences for patients, hospitals,
+blood banks, delivery partners, and administrators. It also includes an
+AI-based blood-demand prediction capability intended to help blood banks
+plan inventory more effectively.
+
+> **Our mission:** Make healthcare resources easier to find, healthcare
+> workflows easier to coordinate, and critical information easier to
+> access.
+
+## 🚨 The Problem
+
+Healthcare coordination can become fragmented when people need help
+quickly:
+
+- 🩸 **Finding blood:** Families may have to call relatives, send
+  messages, or post on social media to locate a suitable blood group.
+- 🏥 **Finding hospital resources:** People may struggle to identify
+  nearby hospitals and understand reported bed or ICU availability.
+- 👨‍⚕️ **Accessing doctors:** Patients need a clear way to discover
+  doctors, check availability, and book appointments.
+- 🚑 **Coordinating delivery:** Blood requests can involve multiple
+  parties, making status visibility and delivery coordination
+  important.
+- 💊 **Comparing medicine prices:** Patients may need to compare
+  prices across available medicine sources instead of checking each
+  source individually.
+- 📊 **Planning blood inventory:** Blood banks can benefit from using
+  historical demand data to anticipate future requirements.
+
+LifeLink brings these related workflows together instead of treating
+each need as a completely separate experience.
+
+## 💡 Our Solution
+
+LifeLink offers a connected healthcare workflow with features such as:
+
+- Discovering nearby hospitals, blood banks, and donors using
+  location-based search.
+- Viewing hospital information, reported capacity, emergency status,
+  doctors, and services.
+- Booking appointments with doctors based on their configured
+  availability.
+- Creating and tracking blood requests.
+- Coordinating blood-bank processing and delivery-partner workflows.
+- Receiving real-time updates through Socket.IO where implemented.
+- Supporting blood banks with AI-based blood-demand prediction.
+- Comparing medicine prices across supported sources.
+- Managing notifications, enquiries, and support tickets.
+
+**Important:** Hospital capacity, stock, and emergency information
+depend on the data supplied and maintained by participating facilities.
+LifeLink should not be treated as a guarantee of live clinical capacity
+or a substitute for contacting emergency services.
+
+## ✨ Key Features
+
+### 🩸 1. Blood Request & Blood Bank Coordination
+
+- Create blood requests with relevant blood group, component, and unit
+  details.
+- Discover nearby blood banks using location-based search.
+- Support blood-bank inventory management and request-processing
+  workflows.
+- Track request status as it progresses through the configured
+  workflow.
+- Support donor discovery when suitable blood is not available through
+  the initial route.
+- Coordinate dispatch and delivery workflows with delivery partners.
+
+### 🤖 2. AI-Based Blood Demand Prediction
+
+LifeLink includes an AI-based blood-demand prediction capability
+intended to help blood banks anticipate future requirements and plan
+inventory.
+
+Potential benefits include:
+
+- Identifying demand patterns from available historical data.
+- Supporting blood-group or component-level planning when the data
+  supports it.
+- Helping staff identify potential shortages earlier.
+- Supporting better-informed inventory decisions.
+
+Prediction quality depends on the data, model, and evaluation process.
+The prediction is decision support, not a guarantee of future demand or
+a replacement for blood-bank expertise.
+
+### 🏥 3. Hospital Discovery & Capacity Information
+
+- Discover nearby hospitals using location information.
+- View hospital profiles and available services.
+- Present reported bed-capacity information, including configured
+  categories such as general wards, private rooms, and ICU beds.
+- Show the hospital's emergency status when provided.
+- Help users compare relevant hospital information before contacting a
+  facility.
+
+Capacity and emergency status should be kept up to date by authorized
+hospital staff. Users should confirm availability directly with the
+hospital, particularly during emergencies.
+
+### 👨‍⚕️ 4. Doctor Discovery & Appointment Booking
+
+- Browse doctors associated with hospitals.
+- View specialties, experience, consultation fees, and configured
+  availability.
+- Book appointments based on the doctor's availability and the
+  application's booking rules.
+- Let hospital operators review and manage appointment workflows.
+- View appointment status and appointment history.
+
+### 🚚 5. Delivery Coordination & Tracking
+
+- Support delivery-partner workflows for blood requests.
+- Assign or offer delivery work according to the configured dispatch
+  process.
+- Track delivery progress through status updates.
+- Support pickup and delivery confirmation using OTP-assisted
+  workflows where configured.
+- Send relevant real-time updates to connected users and delivery
+  partners.
+
+### 📍 6. Location-Based Discovery
+
+- Work with geographical coordinates to discover nearby healthcare
+  resources.
+- Support nearby donor, hospital, and blood-bank searches.
+- Use geospatial database queries where configured.
+- Use a geocoding provider for supported location-related workflows.
+
+Location results depend on the accuracy and freshness of stored
+coordinates and provider data.
+
+### 💊 7. Medicine Price Comparison
+
+LifeLink extends beyond blood workflows with medicine price comparison
+across supported sources. The goal is to help users review available
+price information more conveniently.
+
+Displayed prices, availability, and product details depend on the
+integrated sources and should be verified before purchase. This feature
+does not replace medical advice or a prescription from a qualified
+professional.
+
+### 🔔 8. Notifications & Support
 
 - Notifications for relevant platform events.
 - Enquiry handling.
@@ -10,7 +183,7 @@
 - Administrator tools for reviewing platform activity and
   registrations.
 
-### ðŸ” 9. Role-Based Experiences & Sessions
+### 🔐 9. Role-Based Experiences & Sessions
 
 LifeLink supports distinct workflows for different platform roles:
 
@@ -49,25 +222,25 @@ Authentication and authorization should be enforced by the backend for
 protected routes and operations. The exact permissions depend on each
 route's middleware and controller implementation.
 
-## ðŸ”„ Example Workflows
+## 🔄 Example Workflows
 
 ### Blood request workflow
 
 ```text
 User creates a blood request
-          â†“
+          ↓
 Request is processed by the platform
-          â†“
+          ↓
 Blood bank reviews availability and request
-          â†“
+          ↓
 Request is accepted and prepared
-          â†“
+          ↓
 Delivery workflow is initiated, when applicable
-          â†“
+          ↓
 Delivery partner updates progress
-          â†“
+          ↓
 Pickup / delivery confirmation
-          â†“
+          ↓
 Request is completed
 ```
 
@@ -79,15 +252,15 @@ the required blood is unavailable through the initial route.
 
 ```text
 User discovers a hospital and doctor
-          â†“
+          ↓
 Reviews configured doctor availability
-          â†“
+          ↓
 Requests an appointment
-          â†“
+          ↓
 Backend checks availability and existing bookings
-          â†“
+          ↓
 Appointment is created with a time and status
-          â†“
+          ↓
 User and hospital can review appointment details
 ```
 
@@ -95,17 +268,17 @@ User and hospital can review appointment details
 
 ```text
 Hospital operator updates capacity information
-          â†“
+          ↓
 Backend validates and stores the update
-          â†“
+          ↓
 Hospital profile / capacity view reflects the data
-          â†“
+          ↓
 Users can review the reported availability
-          â†“
+          ↓
 User contacts the hospital to confirm urgent needs
 ```
 
-## ðŸ§± Technology Stack
+## 🧱 Technology Stack
 
 ---
 
@@ -163,26 +336,26 @@ their respective project manifests. AI behavior depends on the
 implemented service, configured model, available data, and provider
 credentials.
 
-## ðŸ—ï¸ Backend Architecture
+## 🏗️ Backend Architecture
 
 The backend is organized into routes, controllers, models, middleware,
 configuration, services, and utility modules.
 
 ```text
 Client Applications
-       â”‚
-       â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ REST API requests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-       â”‚                                           â†“
-       â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Socket.IO connection â”€â”€â”€> Node.js / Express
-                                                   â”‚
-                                  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                                  â†“                â†“                â†“
+       │
+       ├──────────── REST API requests ────────────┐
+       │                                           ↓
+       └──────────── Socket.IO connection ───> Node.js / Express
+                                                   │
+                                  ┌────────────────┼────────────────┐
+                                  ↓                ↓                ↓
                               Middleware       Controllers      Socket.IO
                           Authentication      & workflows      event rooms
-                          Role checks              â”‚
-                                                   â†“
-                                  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-                                  â†“                â†“                â†“
+                          Role checks              │
+                                                   ↓
+                                  ┌────────────────┼────────────────┐
+                                  ↓                ↓                ↓
                                MongoDB           Redis          Integrations
                               Application        Sessions      AI / Email /
                                  data                          Media / Maps
@@ -192,19 +365,19 @@ Client Applications
 
 ```text
 backend/
-â”œâ”€â”€ app.js
-â”œâ”€â”€ config/
-â”‚   â”œâ”€â”€ mongoose.js
-â”‚   â”œâ”€â”€ redis.js
-â”‚   â””â”€â”€ cloudinary.js
-â”œâ”€â”€ controllers/
-â”œâ”€â”€ middleware/
-â”œâ”€â”€ models/
-â”œâ”€â”€ routes/
-â”œâ”€â”€ services/
-â”œâ”€â”€ template/
-â”œâ”€â”€ utils/
-â””â”€â”€ validators/
+├── app.js
+├── config/
+│   ├── mongoose.js
+│   ├── redis.js
+│   └── cloudinary.js
+├── controllers/
+├── middleware/
+├── models/
+├── routes/
+├── services/
+├── template/
+├── utils/
+└── validators/
 ```
 
 The structure above is a high-level overview; individual files may vary
@@ -265,7 +438,7 @@ Consult the route files for the exact HTTP methods, request schemas, and
 authorization rules. This table is an overview rather than a complete
 API specification.
 
-## âš¡ Real-Time Communication
+## ⚡ Real-Time Communication
 
 LifeLink uses Socket.IO for supported live workflows.
 
@@ -279,7 +452,7 @@ new roles or workflows are added. In particular, ensure hospital and
 administrator socket access is explicitly authorized if those roles
 require live events.
 
-## ðŸ”’ Security Considerations
+## 🔒 Security Considerations
 
 Security is essential because LifeLink handles personal and
 healthcare-related coordination data.
@@ -305,7 +478,7 @@ LifeLink is a coordination platform; it does not replace professional
 medical judgment, emergency services, blood-bank eligibility checks, or
 hospital confirmation.
 
-## ðŸ–¥ï¸ Requirements
+## 🖥️ Requirements
 
 For local backend development, you need:
 
@@ -316,7 +489,7 @@ For local backend development, you need:
 - Provider credentials for integrations you want to use.
 - The frontend repository if you want to run the full application.
 
-## ðŸš€ Getting Started
+## 🚀 Getting Started
 
 ### 1. Clone the repository
 
@@ -399,7 +572,7 @@ Set the frontend API base URL to the backend URL for the environment you
 are using. Configure CORS and cookie settings to match the frontend
 origin.
 
-## â˜ï¸ Deployment Notes
+## ☁️ Deployment Notes
 
 Before deploying:
 
@@ -423,7 +596,7 @@ Do not expose MongoDB or Redis publicly unless necessary and properly
 secured. Prefer private networking where supported by the hosting
 provider.
 
-## ðŸ§ª Testing Checklist
+## 🧪 Testing Checklist
 
 Before a release, verify the workflows that apply to the current
 implementation:
@@ -442,10 +615,10 @@ implementation:
 - [ ] Socket.IO authentication and event-room authorization.
 - [ ] File uploads and provider integrations.
 - [ ] AI demand-prediction behavior with representative data.
-- [ ] Medicine price comparison when the feature is developed.
+- [ ] Medicine price comparison results and source freshness.
 - [ ] Production CORS, cookies, and environment variables.
 
-## ðŸ›£ï¸ Future Improvements
+## 🛣️ Future Improvements
 
 Potential areas for further development include:
 
@@ -461,7 +634,7 @@ Potential areas for further development include:
 These are potential enhancements, not claims that every item is already
 implemented.
 
-## ðŸ¤ Contributing
+## 🤝 Contributing
 
 Contributions and feedback are welcome.
 
@@ -473,7 +646,7 @@ Contributions and feedback are welcome.
 5.  Test the affected workflows before submitting a pull request.
 6.  Describe what changed and which checks were performed.
 
-## âš ï¸ Disclaimer
+## ⚠️ Disclaimer
 
 LifeLink is designed to support healthcare discovery and coordination.
 It is not a substitute for emergency medical services, clinical advice,
@@ -486,11 +659,10 @@ estimates and should be reviewed by qualified personnel.
 
 ::: {align="center"}
 
-### â¤ï¸ LifeLink
+### ❤️ LifeLink
 
 **Connecting every link in healthcare.**
 
 _Built to help people find the right healthcare resource when it matters
 most._
 :::
-
