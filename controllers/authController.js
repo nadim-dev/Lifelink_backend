@@ -66,8 +66,9 @@ export const loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid input" });
     }
 
-    const { password, email } = sanitize(data);
-    const user = await User.findOne({ email }).lean();
+    const { password } = sanitize(data);
+    const email = data.email.trim().toLowerCase();
+    const user = await User.findOne({ email }).collation({ locale: "en", strength: 2 }).lean();
 
     if (!user) {
       return res.status(404).json({ message: "user dosen't exist" });
@@ -127,6 +128,9 @@ export const fetchCurrentUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ message: "User account no longer exists" });
+    }
     const currentUser = toCurrentUser(user);
     return res.status(200).json({ currentUser });
   } catch (err) {
@@ -453,3 +457,4 @@ export const createNewUserPassword = async (req, res) => {
     });
   }
 };
+
