@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import redisClient from "../config/redis.js";
+import { sessionCookieOptions } from "../config/sessionCookie.js";
 import Donor from "../models/donorModel.js";
 import Enquiry from "../models/enquiryModel.js";
 import SupportTicket from "../models/ticketModel.js";
@@ -107,9 +108,8 @@ export const loginUser = async (req, res) => {
     await redisClient.expire(rediskey, sessionExpiryTime);
 
     res.cookie("sid", sessionId, {
-      httpOnly: true,
+      ...sessionCookieOptions,
       signed: true,
-      sameSite: "lax",
       maxAge: sessionExpiryTime * 1000,
     });
 
@@ -257,7 +257,7 @@ export const logoutUser = async (req, res) => {
 
   const sessionId = req.signedCookies.sid;
   await redisClient.del(`session:${sessionId}`);
-  res.clearCookie("sid");
+  res.clearCookie("sid", sessionCookieOptions);
   return res.status(204).end();
 };
 
@@ -281,7 +281,7 @@ export const deleteCurrentUserAccount = async (req, res) => {
       sessionId ? redisClient.del(`session:${sessionId}`) : Promise.resolve(),
     ]);
 
-    res.clearCookie("sid");
+    res.clearCookie("sid", sessionCookieOptions);
     return res.status(200).json({ message: "Account deleted successfully" });
   } catch (err) {
     console.log(err.message);
@@ -342,9 +342,8 @@ export const loginWithGoogle = async (req, res) => {
       await redisClient.expire(rediskey, sessionExpiryTime);
 
       res.cookie("sid", sessionId, {
-        httpOnly: true,
+        ...sessionCookieOptions,
         signed: true,
-        sameSite: "lax",
         maxAge: sessionExpiryTime * 1000,
       });
 

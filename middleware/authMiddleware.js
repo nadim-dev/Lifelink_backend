@@ -1,4 +1,5 @@
 import redisClient from "../config/redis.js";
+import { sessionCookieOptions } from "../config/sessionCookie.js";
 
 
 export default async function checkAuth(req,res,next){
@@ -6,7 +7,7 @@ export default async function checkAuth(req,res,next){
   const sessionId=req.signedCookies.sid;
 
   if(!sessionId){
-      res.clearCookie("sid"); // if user manipulate session id then we will clear his cookie
+      res.clearCookie("sid", sessionCookieOptions); // if user manipulate session id then we will clear his cookie
       return res.status(401).json({"message":"not logged in"})
   }
 
@@ -14,12 +15,12 @@ export default async function checkAuth(req,res,next){
   try {
     session = await redisClient.hGetAll(`session:${sessionId}`);
   } catch (err) {
-    res.clearCookie("sid");
+    res.clearCookie("sid", sessionCookieOptions);
     return res.status(401).json({"error":"not logged in"});
   }
   
   if (!session || Object.keys(session).length === 0) {
-      res.clearCookie("sid");
+      res.clearCookie("sid", sessionCookieOptions);
       return res.status(401).json({"message":"not logged in"})
   }
 
