@@ -27,22 +27,33 @@ const server = http.createServer(app);
 const mySecretKey = process.env.mySecretKey;
 
 const PORT=4000
+
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // Requests without an Origin header (health checks and server-to-server
+    // calls) are allowed; browser requests must match a configured frontend.
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ""))) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
+};
  
 app.use(express.json());
- 
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-}));
+app.use(cors(corsOptions));
 
 
 //?  socket cors
 
 const io = new Server(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-  },
+  cors: corsOptions,
 });
 
 app.set("io", io);
