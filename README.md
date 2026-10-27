@@ -1,4 +1,4 @@
-﻿# 🩺 LifeLink
+﻿﻿# 🩺 LifeLink
 
 ### AI-Powered Healthcare & Emergency Assistance System
 
@@ -647,4 +647,3 @@ estimates and should be reviewed by qualified personnel.
 
 *Built to help people find the right healthcare resource when it matters
 most.*
-
